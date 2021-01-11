@@ -4,7 +4,7 @@
 
 <head>
     <meta charset="utf-8">
-    <meta name="keywords" content="Protocol Buffers编码详解, MnCu&#39;s Blog">
+    <meta name="keywords" content="【译】Go优雅重启, MnCu&#39;s Blog">
     <meta name="description" content="">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
@@ -16,7 +16,7 @@
     <!-- Global site tag (gtag.js) - Google Analytics -->
 
 
-    <title>Protocol Buffers编码详解 | MnCu&#39;s Blog</title>
+    <title>【译】Go优雅重启 | MnCu&#39;s Blog</title>
     <link rel="icon" type="image/png" href="/favicon.png">
 
     <link rel="stylesheet" type="text/css" href="/libs/awesome/css/all.css">
@@ -288,12 +288,12 @@
 
 
 
-<div class="bg-cover pd-header post-cover" style="background-image: url('/medias/featureimages/11.jpg')">
+<div class="bg-cover pd-header post-cover" style="background-image: url('/medias/featureimages/23.jpg')">
     <div class="container" style="right: 0px;left: 0px;">
         <div class="row">
             <div class="col s12 m12 l12">
                 <div class="brand">
-                    <h1 class="description center-align post-title">Protocol Buffers编码详解</h1>
+                    <h1 class="description center-align post-title">【译】Go优雅重启</h1>
                 </div>
             </div>
         </div>
@@ -409,20 +409,12 @@
                     
                     <div class="article-tag">
                         
-                            <a href="/tags/ProtocolBuffers/">
-                                <span class="chip bg-color">ProtocolBuffers</span>
+                            <a href="/tags/go/">
+                                <span class="chip bg-color">go</span>
                             </a>
                         
-                            <a href="/tags/Varint/">
-                                <span class="chip bg-color">Varint</span>
-                            </a>
-                        
-                            <a href="/tags/ZigZag/">
-                                <span class="chip bg-color">ZigZag</span>
-                            </a>
-                        
-                            <a href="/tags/encode/">
-                                <span class="chip bg-color">encode</span>
+                            <a href="/tags/endless/">
+                                <span class="chip bg-color">endless</span>
                             </a>
                         
                     </div>
@@ -437,7 +429,7 @@
                 
                 <div class="post-date info-break-policy">
                     <i class="far fa-calendar-minus fa-fw"></i>发布日期:&nbsp;&nbsp;
-                    2021-01-06
+                    2021-01-11
                 </div>
                 
 
@@ -446,14 +438,14 @@
                 
                 <div class="info-break-policy">
                     <i class="far fa-file-word fa-fw"></i>文章字数:&nbsp;&nbsp;
-                    3.9k
+                    2k
                 </div>
                 
 
                 
                 <div class="info-break-policy">
                     <i class="far fa-clock fa-fw"></i>阅读时长:&nbsp;&nbsp;
-                    14 分
+                    8 分
                 </div>
                 
 
@@ -471,278 +463,150 @@
 
         <div class="card-content article-card-content">
             <div id="articleContent">
-                <h3 id="基本介绍"><a href="#基本介绍" class="headerlink" title="基本介绍"></a>基本介绍</h3><h4 id="本节要讲的内容"><a href="#本节要讲的内容" class="headerlink" title="本节要讲的内容"></a>本节要讲的内容</h4><p>有关<code>Protocol Buffers</code>的各种demo这个网上已经很多了，所以本文目的并不在于讲解如何实现一个<code>Protocol Buffers</code>的demo</p>
-<p>本文主要是讲解一下<code>Protocol Buffers</code>的编码方式，让大家知道为什么<code>Protocol Buffers</code>会”更快”。</p>
-<p>本文主要是介绍原理，重点在于根据原理学习这种“优化”方式，所以本文中的部分代码实现可以选择性跳过。</p>
-<h4 id="什么是Protocol-Buffers"><a href="#什么是Protocol-Buffers" class="headerlink" title="什么是Protocol Buffers"></a>什么是Protocol Buffers</h4><blockquote>
-<p>Protocol Buffers 是一种轻便高效的结构化数据存储格式，可以用于结构化数据序列化，很适合做数据存储或 RPC 数据交换格式。它可用于通讯协议、数据存储等领域的语言无关、平台无关、可扩展的序列化结构数据格式。</p>
+                <p><strong>原文 <a target="_blank" rel="noopener" href="https://grisha.org/blog/2014/06/03/graceful-restart-in-golang/">Graceful Restart in Golang</a></strong></p>
+<p><strong>作者 <a target="_blank" rel="noopener" href="https://grisha.org/">grisha</a></strong></p>
+<p><strong>声明：本文目的仅仅作为个人mark，所以在翻译的过程中参杂了自己的思想甚至改变了部分内容，其中有下划线的文字为译者添加。但由于译者水平有限，所写文字或者代码可能会误导读者，如发现文章有问题，请尽快告知，不胜感激。</strong></p>
+<hr>
+<h3 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h3><p>Update (Apr 2015): <a target="_blank" rel="noopener" href="https://github.com/fvbock">Florian von Bock</a>已经根据本文实现了一个叫做<a target="_blank" rel="noopener" href="https://github.com/fvbock/endless">endless</a>的Go package</p>
+<p>大家知道，当我们用Go写的web服务器需要修改配置或者需要升级代码的时候我们需要重启服务器，如果你（像我一样）已经将优雅的重启视为理所当然，因为使用Golang你需要自己动手来做这些操作，所以你可能会发现这个方式非常方便。</p>
+<h3 id="什么是优雅重启"><a href="#什么是优雅重启" class="headerlink" title="什么是优雅重启"></a>什么是优雅重启</h3><p>本文中的优雅重启表现为两点</p>
+<ol>
+<li>进程在不关闭其所监听的端口的情况下重启</li>
+<li>重启过程中保证所有请求能被正确的处理</li>
+</ol>
+<h4 id="1-进程在不关闭其所监听的端口的情况下重启"><a href="#1-进程在不关闭其所监听的端口的情况下重启" class="headerlink" title="1.进程在不关闭其所监听的端口的情况下重启"></a>1.进程在不关闭其所监听的端口的情况下重启</h4><ul>
+<li>fork一个子进程，该子进程继承了父进程所监听的socket</li>
+<li>子进程执行初始化等操作，并最终开始接收该socket的请求</li>
+<li>父进程停止接收请求并等待当前处理的请求终止</li>
+</ul>
+<h5 id="fork一个子进程"><a href="#fork一个子进程" class="headerlink" title="fork一个子进程"></a>fork一个子进程</h5><p>有不止一种方法fork一个子进程，但在这种情况下推荐<a target="_blank" rel="noopener" href="https://golang.org/pkg/os/exec/#Command">exec.Command</a>，因为<a target="_blank" rel="noopener" href="https://golang.org/pkg/os/exec/#Cmd">Cmd</a>结构提供了一个字段<code>ExtraFiles</code>，该字段(注意不支持windows)为子进程额外地指定了需要继承的额外的文件描述符，不包含<code>std_in, std_out, std_err</code>。<br>需要注意的是，<code>ExtraFiles</code>描述中有这样一句话：</p>
+<blockquote>
+<p>If non-nil, entry i becomes file descriptor 3+i</p>
 </blockquote>
-<p>ps: 当前主要存在两个版本，分别是<code>Protocol Buffers2</code>以及<code>Protocol Buffers3</code>，因为<code>Protocol Buffers3</code> 比 <code>Protocol Buffers2</code> 支持更多语言和功能，同时去掉了一些复杂的语法和特性，更强调约定而弱化语法。因此本文中主要根据<code>Protocol Buffers3</code>进行讲解</p>
-<p>可以大体知道<code>Protocol Buffers</code>和<code>JSON</code>类似，都是一种数据系列化协议，那么相较于其他的数据系列化协议他有什么优点呢？</p>
-<h4 id="Protocol-Buffers的优点和缺点"><a href="#Protocol-Buffers的优点和缺点" class="headerlink" title="Protocol Buffers的优点和缺点"></a>Protocol Buffers的优点和缺点</h4><p>优点和缺点都是通过比较来得出的，我们暂时就拿现在较为流行的另一个序列化协议<code>JSON</code>和<code>Protocol Buffers</code>做一下比较。</p>
-<p>相较于<code>JSON</code>来说，<code>Protocol Buffers</code>：</p>
-<ol>
-<li>一般来说更小</li>
-<li>一般来说更快</li>
-<li>一般来说会更加麻烦</li>
-</ol>
-<p>前两条是优点，之所以会加上“一般来说”这种限定条件是因为某些特殊情况下<code>Protocol Buffers</code>并不总是会比<code>JSON</code>更小更快，至于原因下文中会叙述。</p>
-<p>第三条则是<code>Protocol Buffers</code>为了达到前两条的优点对复杂性做了妥协。毕竟，计算机的发展就是在不断的妥协；得到总是伴随着失去。<code>Protocol Buffers</code>之所以更加麻烦是因为在使用<code>Protocol Buffers</code>时，需要传输端以及接收端事先定义好数据格式，也就是写一下<code>.proto</code>文件。而<code>JSON</code>则简单得多，通信双方事先不需要知道数据格式，只要数据符合<code>JSON</code>协议规范则都可以正常解析。</p>
-<h3 id="引入"><a href="#引入" class="headerlink" title="引入"></a>引入</h3><p>现代API往往会返回一个或者多个对象，又因为每个对象一般包含了多个属性，所以我们往往习惯于使用<strong>key value</strong>的方式来表达数据。</p>
-<p>比如说我们要获取一个人的个人信息，这个“人”是一个对象，他具有“姓名”，“年龄”……等各种属性(attribute)，所以我们的数据往往会表达成这种样子：</p>
-<pre class="line-numbers language-none"><code class="language-none">name: A
-age: 18
-<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
-<p>而上面的信息通过<code>JSON</code>编码后：</p>
-<pre class="line-numbers language-json" data-language="json"><code class="language-json"><span class="token punctuation">&#123;</span>
-    <span class="token property">"name"</span><span class="token operator">:</span> <span class="token string">"A"</span><span class="token punctuation">,</span>
-    <span class="token property">"age"</span><span class="token operator">:</span> <span class="token number">18</span>
-<span class="token punctuation">&#125;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span></span></code></pre>
-<p>但是，真正对信息需求方来说，<strong>只有<code>value</code>才是其真正想要的值，在这里我们称之为”目标数据”，而<code>key</code>则仅仅是用来区分<code>value</code>所代表的含义的</strong>，所以：</p>
-<ul>
-<li><code>value</code>目标数据</li>
-<li><code>key</code>非目标数据</li>
-</ul>
-<p>另外，通过<code>JSON</code>编码后，我们发现数据已经多了很多的其他字符，比如<code>&quot;</code>,<code>&#123;&#125;</code>,<code>:</code>，<code>,</code>，这些字符存在的意义在于作为<strong>分隔符或者说边界</strong>区分<code>key</code>与<code>value</code>，或者是<code>attribute</code>与<code>attribute</code>。这些分隔符也作为非目标数据存在。</p>
-<p>那么如何将对其简化呢？</p>
-<ul>
-<li>降低非目标数据所占比例</li>
-<li>降低目标数据所占空间大小</li>
-</ul>
-<p><code>Protocol Buffers</code>是如何做的呢？</p>
-<ol>
-<li><code>key</code>使用正整数表示，同时对所有整数进行特殊编码，节省空间。不论该整数是<code>key</code>还是<code>value</code></li>
-<li>所有数据类型在“数据编码”层面实现”分隔符”，不使用额外的字符作为“分隔符”。</li>
-</ol>
-<p>事实上<code>Protocol Buffers</code>对字符串、整数、repeated字段都做了特殊编码，但之所以在第一点重点突出整型的作用，是因为个人认为<code>Protocol Buffers</code>的整型编码是其余类型编码的基石，因此会着重讲一下整型编码的实现原理。至于其他类型编码则相对简单一些，明白了整型编码后就会很容易理解。</p>
-<p>所以接下来直接讲解整型编码。</p>
-<h3 id="整型编码"><a href="#整型编码" class="headerlink" title="整型编码"></a>整型编码</h3><p>一般来说，整数在计算机的存储空间是固定的，<code>int32</code>占用4个字节,<code>int64</code>则占用8个字节。但是这样对于比较小的整数来说则较为浪费。</p>
-<p>我们以类型为<code>uint32</code>的数字<code>1</code>为例:</p>
-<pre class="line-numbers language-none"><code class="language-none">00000000 00000000 00000000 00000001<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
-<p>我们可以看到，左侧的3个字节的<code>0</code>都是无意义的填充，真正的有效字节是最低位也就是最右侧的字节。</p>
-<p>那么能够有一种编码方式让我们能根据数字的值动态调整其所占空间大小呢？</p>
-<h4 id="Varint"><a href="#Varint" class="headerlink" title="Varint"></a>Varint</h4><p>Varint主要目的是对<strong>无符号整数</strong>进行压缩，以便更好的传输/存储整数数据。一个整数会消耗1个或者多个字节不等，一般来说，越小的整数消耗的字节数量越小。</p>
-<p>Varint编码格式每个字节可分为：</p>
-<ul>
-<li>标志位，每个字节的最高有效位<ul>
-<li>标志位为0，表示该字节为尾部</li>
-<li>标志位为1，表示未结束</li>
-</ul>
-</li>
-<li>数据存储位，除最高有效位以外的其他位</li>
-</ul>
-<p>ps：因为有额外的标志位，所以也会出现一个正常来说可以用4个字节表示的整数在Varint编码后所需字节大于4个的情况。但如果我们能确定所传输的整数大多数为较小的数字的话，这个缺点就可以接受。</p>
-<p>接下来看一个实际的例子。</p>
-<ul>
-<li>数字1<pre class="line-numbers language-none"><code class="language-none"># 这个很简单，标志位也就是最高有效位是0，数据存储位为1
-0 0000001<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre></li>
-<li>数字300<pre class="line-numbers language-none"><code class="language-none">1 0101100 0 0000010
+<p>这句是说，索引位置为i的文件描述符传过去，最终会变为值为i+3的文件描述符。ie: 索引为0的文件描述符565, 最终变为文件描述符3</p>
+<pre class="line-numbers language-go" data-language="go"><code class="language-go">file <span class="token operator">:=</span> netListener<span class="token punctuation">.</span><span class="token function">File</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token comment">// this returns a Dup()</span>
+path <span class="token operator">:=</span> <span class="token string">"/path/to/executable"</span>
+args <span class="token operator">:=</span> <span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token builtin">string</span><span class="token punctuation">&#123;</span>
+    <span class="token string">"-graceful"</span><span class="token punctuation">&#125;</span>
 
-# 300占用了两个字节，第一个字节的标志位为1所以说明还没有结束，需要读取下一个字节，第二个字节标志位为0，表示结束，所以共有两个字节。
-# 然后去除两个标志位，得到 0101100 0000010，也就是 100101100, 256 + 32 + 8 + 4 &#x3D; 300<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span></span></code></pre>
-在上面的例子中我们都是在用无符号整数举例子，那么假如我们用有符号整数呢？</li>
-</ul>
-<p>我们知道负整数在计算机存储时是存储其补码(正整数也是，只不过其补码与原码一致)，那么我们知道一个<code>int32</code>的负数<code>-1</code>在计算机中会被存储为<code>11111111 11111111 11111111 11111111</code>，这时候即使是绝对值很小的负数使用Varint也会占用额外的字节，所以接下来就要用到ZigZag了。</p>
-<h4 id="ZigZag"><a href="#ZigZag" class="headerlink" title="ZigZag"></a>ZigZag</h4><p>ZigZag也是一种整数压缩算法，只不过其主要针对<strong>有符号整数</strong>，其原理与Varint类似，也是将数字中高位中无意义的<code>0</code>移除。</p>
-<p>但其实现方式不同，先说一下较为简单的正整数：</p>
-<pre class="line-numbers language-go" data-language="go"><code class="language-go"><span class="token comment">// var t int32 = 2</span>
-<span class="token number">00000000</span> <span class="token number">00000000</span> <span class="token number">00000000</span> <span class="token number">00000010</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
-<p>这时候我们发现，这里面除了<code>10</code>以外，其余的<code>0</code>都是没有用的，太浪费空间了，于是我们将其符号位也就是最左侧的<code>0</code>移动到右侧末尾，然后将高位无效的0全部移除，我们得到<code>100</code>，最低位的<code>0</code>是符号位表示正负。逆向推导求原始值的过程也很简单，无非就是反着来罢了。</p>
-<p>再来看负整数:</p>
-<pre class="line-numbers language-none"><code class="language-none">&#x2F;&#x2F; var st int32 &#x3D; -2
-11111111 11111111 11111111 11111110<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
-<p>负整数的操作步骤需要两步：</p>
-<ol>
-<li>移动符号位到最低位</li>
-<li>对数据位求反</li>
-</ol>
-<p>经过第一步后，变为<code>11111111 11111111 11111111 11111101</code>，经过第二步后，变为<code>00000000 00000000 00000000 00000011</code>，这时候我们就可以忽略高位的无效0，对其进行压缩了，最终得到<code>11</code></p>
-<p>最后说0，0的话最简单，最终就是0。</p>
-<table>
-<thead>
-<tr>
-<th>原始值</th>
-<th>Zigzag编码值</th>
-</tr>
-</thead>
-<tbody><tr>
-<td>0</td>
-<td>0</td>
-</tr>
-<tr>
-<td>-1</td>
-<td>1</td>
-</tr>
-<tr>
-<td>1</td>
-<td>2</td>
-</tr>
-<tr>
-<td>-2</td>
-<td>3</td>
-</tr>
-<tr>
-<td>2</td>
-<td>4</td>
-</tr>
-<tr>
-<td>2147483647</td>
-<td>4294967294</td>
-</tr>
-<tr>
-<td>-2147483647</td>
-<td>4294967295</td>
-</tr>
-</tbody></table>
-<p>可以看到通过Zigzag编码我们得到这样的一种映射，所以看到说Zigzag是一种映射编码方案也是对的。</p>
-<p>经过上面的例子，我们知道，十进制<code>2</code>变为二进制<code>100</code>，十进制<code>-2</code>变为二进制<code>11</code>，那么我们保存这两个值的话如何保存呢？用一个字节存储<code>000100 11</code>肯定是不行的，因为不知道这一个字节代表了几个数，也没办法知道其分割点。这时候我们就可以利用上面的<code>Varint</code>进行编码了，最终用两个字节对这两个数分别<code>00000100  00000011</code>来存储即可。所以<code>ZigZag</code>一般是需要配合<code>Varint</code>的。</p>
-<p>接下来用go实现ZigZag(<em>这个地方不感兴趣额的话可以跳过</em>):</p>
-<pre class="line-numbers language-go" data-language="go"><code class="language-go"><span class="token comment">// zigzag 算法go实现</span>
-<span class="token keyword">func</span> <span class="token function">encode</span><span class="token punctuation">(</span>a <span class="token builtin">int32</span><span class="token punctuation">)</span> <span class="token builtin">int32</span> <span class="token punctuation">&#123;</span>
-	<span class="token keyword">return</span> <span class="token punctuation">(</span>a <span class="token operator">&lt;&lt;</span> <span class="token number">1</span><span class="token punctuation">)</span> <span class="token operator">^</span> <span class="token punctuation">(</span>a <span class="token operator">>></span> <span class="token number">31</span><span class="token punctuation">)</span>
+cmd <span class="token operator">:=</span> exec<span class="token punctuation">.</span><span class="token function">Command</span><span class="token punctuation">(</span>path<span class="token punctuation">,</span> args<span class="token operator">...</span><span class="token punctuation">)</span>
+cmd<span class="token punctuation">.</span>Stdout <span class="token operator">=</span> os<span class="token punctuation">.</span>Stdout
+cmd<span class="token punctuation">.</span>Stderr <span class="token operator">=</span> os<span class="token punctuation">.</span>Stderr
+cmd<span class="token punctuation">.</span>ExtraFiles <span class="token operator">=</span> <span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token operator">*</span>os<span class="token punctuation">.</span>File<span class="token punctuation">&#123;</span>file<span class="token punctuation">&#125;</span>
+
+err <span class="token operator">:=</span> cmd<span class="token punctuation">.</span><span class="token function">Start</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+<span class="token keyword">if</span> err <span class="token operator">!=</span> <span class="token boolean">nil</span> <span class="token punctuation">&#123;</span>
+    log<span class="token punctuation">.</span><span class="token function">Fatalf</span><span class="token punctuation">(</span><span class="token string">"gracefulRestart: Failed to launch, error: %v"</span><span class="token punctuation">,</span> err<span class="token punctuation">)</span>
+<span class="token punctuation">&#125;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>上面的代码中，<code>netListener</code>是一个<a target="_blank" rel="noopener" href="https://golang.org/pkg/net/#Listener">net.Listener</a>类型的指针，path变量则是我们要更新的新的可执行文件的路径。</p>
+<p>需要注意的是：上面<code>netListener.File()</code>与<a target="_blank" rel="noopener" href="http://pubs.opengroup.org/onlinepubs/009695399/functions/dup.html">dup</a>函数类似，返回的是一个拷贝的文件描述符。另外，该文件描述符不应该设置<a target="_blank" rel="noopener" href="http://pubs.opengroup.org/onlinepubs/009695399/functions/fcntl.html">FD_CLOEXEC</a>标识，这将会导致出现我们不想要的结果：子进程的该文件描述符被关闭。</p>
+<p>你可能会想到可以使用命令行参数把该文件描述符的值传递给子进程，但相对来说，我使用的这种方式更为简单</p>
+<p>最终，<code>args</code>数组包含了一个<code>-graceful</code>选项，你的进程需要以某种方式通知子进程要复用父进程的描述符而不是新打开一个。</p>
+<h5 id="子进程初始化"><a href="#子进程初始化" class="headerlink" title="子进程初始化"></a>子进程初始化</h5><pre class="line-numbers language-go" data-language="go"><code class="language-go">server <span class="token operator">:=</span> <span class="token operator">&amp;</span>http<span class="token punctuation">.</span>Server<span class="token punctuation">&#123;</span>Addr<span class="token punctuation">:</span> <span class="token string">"0.0.0.0:8888"</span><span class="token punctuation">&#125;</span>
+
+<span class="token keyword">var</span> gracefulChild <span class="token builtin">bool</span>
+<span class="token keyword">var</span> l net<span class="token punctuation">.</span>Listever
+<span class="token keyword">var</span> err <span class="token builtin">error</span>
+
+flag<span class="token punctuation">.</span><span class="token function">BoolVar</span><span class="token punctuation">(</span><span class="token operator">&amp;</span>gracefulChild<span class="token punctuation">,</span> <span class="token string">"graceful"</span><span class="token punctuation">,</span> <span class="token boolean">false</span><span class="token punctuation">,</span> <span class="token string">"listen on fd open 3 (internal use only)"</span><span class="token punctuation">)</span>
+
+<span class="token keyword">if</span> gracefulChild <span class="token punctuation">&#123;</span>
+    log<span class="token punctuation">.</span><span class="token function">Print</span><span class="token punctuation">(</span><span class="token string">"main: Listening to existing file descriptor 3."</span><span class="token punctuation">)</span>
+    f <span class="token operator">:=</span> os<span class="token punctuation">.</span><span class="token function">NewFile</span><span class="token punctuation">(</span><span class="token number">3</span><span class="token punctuation">,</span> <span class="token string">""</span><span class="token punctuation">)</span>
+    l<span class="token punctuation">,</span> err <span class="token operator">=</span> net<span class="token punctuation">.</span><span class="token function">FileListener</span><span class="token punctuation">(</span>f<span class="token punctuation">)</span>
+<span class="token punctuation">&#125;</span> <span class="token keyword">else</span> <span class="token punctuation">&#123;</span>
+    log<span class="token punctuation">.</span><span class="token function">Print</span><span class="token punctuation">(</span><span class="token string">"main: Listening on a new file descriptor."</span><span class="token punctuation">)</span>
+    l<span class="token punctuation">,</span> err <span class="token operator">=</span> net<span class="token punctuation">.</span><span class="token function">Listen</span><span class="token punctuation">(</span><span class="token string">"tcp"</span><span class="token punctuation">,</span> server<span class="token punctuation">.</span>Addr<span class="token punctuation">)</span>
+<span class="token punctuation">&#125;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<h5 id="通知父进程停止"><a href="#通知父进程停止" class="headerlink" title="通知父进程停止"></a>通知父进程停止</h5><pre class="line-numbers language-go" data-language="go"><code class="language-go"><span class="token keyword">if</span> gracefulChild <span class="token punctuation">&#123;</span>
+    parent <span class="token operator">:=</span> syscall<span class="token punctuation">.</span><span class="token function">Getppid</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+    log<span class="token punctuation">.</span><span class="token function">Printf</span><span class="token punctuation">(</span><span class="token string">"main: Killing parent pid: %v"</span><span class="token punctuation">,</span> parent<span class="token punctuation">)</span>
+    syscall<span class="token punctuation">.</span><span class="token function">Kill</span><span class="token punctuation">(</span>parent<span class="token punctuation">,</span> syscall<span class="token punctuation">.</span>SIGTERM<span class="token punctuation">)</span>
 <span class="token punctuation">&#125;</span>
 
-<span class="token keyword">func</span> <span class="token function">decode</span><span class="token punctuation">(</span>b <span class="token builtin">int32</span><span class="token punctuation">)</span> <span class="token builtin">int32</span> <span class="token punctuation">&#123;</span>
-	<span class="token keyword">return</span> <span class="token function">int32</span><span class="token punctuation">(</span><span class="token function">uint32</span><span class="token punctuation">(</span>b<span class="token punctuation">)</span><span class="token operator">>></span><span class="token number">1</span><span class="token punctuation">)</span> <span class="token operator">^</span> <span class="token operator">-</span><span class="token punctuation">(</span>b <span class="token operator">&amp;</span> <span class="token number">1</span><span class="token punctuation">)</span>
+server<span class="token punctuation">.</span><span class="token function">Serve</span><span class="token punctuation">(</span>l<span class="token punctuation">)</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<h5 id="父进程停止接收请求并等待当前所处理的所有请求结束"><a href="#父进程停止接收请求并等待当前所处理的所有请求结束" class="headerlink" title="父进程停止接收请求并等待当前所处理的所有请求结束"></a>父进程停止接收请求并等待当前所处理的所有请求结束</h5><p>为了做到这一点我们需要使用<a target="_blank" rel="noopener" href="https://golang.org/pkg/sync/#WaitGroup">sync.WaitGroup</a>来保证对当前打开的连接的追踪，基本上就是：每当接收一个新的请求时，给wait group做原子性加法，当请求结束时给wait group做原子性减法。也就是说wait group存储了当前正在处理的请求的数量</p>
+<pre class="line-numbers language-go" data-language="go"><code class="language-go"><span class="token keyword">var</span> httpWg sync<span class="token punctuation">.</span>WaitGroup<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<p>匆匆一瞥，我发现go中的http标准库并没有为Accept()和Close()提供钩子函数，但这就到了<code>interface</code>展现其魔力的时候了(非常感谢<a target="_blank" rel="noopener" href="http://nella.org/jra/"> Jeff R. Allen</a>的这篇<a target="_blank" rel="noopener" href="http://blog.nella.org/zero-downtime-upgrades-of-tcp-servers-in-go/">文章</a>)</p>
+<p>下面是一个例子，该例子实现了每当执行Accept()的时候会原子性增加wait group。首先我们先继承<code>net.Listener</code>实现一个结构体</p>
+<pre class="line-numbers language-go" data-language="go"><code class="language-go"><span class="token keyword">type</span> gracefulListener <span class="token keyword">struct</span> <span class="token punctuation">&#123;</span>
+    net<span class="token punctuation">.</span>Listener
+    stop    <span class="token keyword">chan</span> <span class="token builtin">error</span>
+    stopped <span class="token builtin">bool</span>
+<span class="token punctuation">&#125;</span>
+
+<span class="token keyword">func</span> <span class="token punctuation">(</span>gl <span class="token operator">*</span>gracefulListener<span class="token punctuation">)</span> <span class="token function">File</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">*</span>os<span class="token punctuation">.</span>File <span class="token punctuation">&#123;</span>
+    tl <span class="token operator">:=</span> gl<span class="token punctuation">.</span>Listener<span class="token punctuation">.</span><span class="token punctuation">(</span><span class="token operator">*</span>net<span class="token punctuation">.</span>TCPListener<span class="token punctuation">)</span>
+    fl<span class="token punctuation">,</span> <span class="token boolean">_</span> <span class="token operator">:=</span> tl<span class="token punctuation">.</span><span class="token function">File</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+    <span class="token keyword">return</span> fl
+<span class="token punctuation">&#125;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>接下来我们覆盖Accept方法(暂时先忽略<code>gracefulConn</code>)</p>
+<pre class="line-numbers language-go" data-language="go"><code class="language-go"><span class="token keyword">func</span> <span class="token punctuation">(</span>gl <span class="token operator">*</span>gracefulListener<span class="token punctuation">)</span> <span class="token function">Accept</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">(</span>c net<span class="token punctuation">.</span>Conn<span class="token punctuation">,</span> err <span class="token builtin">error</span><span class="token punctuation">)</span> <span class="token punctuation">&#123;</span>
+    c<span class="token punctuation">,</span> err <span class="token operator">=</span> gl<span class="token punctuation">.</span>Listener<span class="token punctuation">.</span><span class="token function">Accept</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+    <span class="token keyword">if</span> err <span class="token operator">!=</span> <span class="token boolean">nil</span> <span class="token punctuation">&#123;</span>
+        <span class="token keyword">return</span>
+    <span class="token punctuation">&#125;</span>
+
+    c <span class="token operator">=</span> gracefulConn<span class="token punctuation">&#123;</span>Conn<span class="token punctuation">:</span> c<span class="token punctuation">&#125;</span>
+
+    httpWg<span class="token punctuation">.</span><span class="token function">Add</span><span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">)</span>
+    <span class="token keyword">return</span>
+<span class="token punctuation">&#125;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>我们还需要一个构造函数以及一个Close方法，构造函数中另起一个goroutine关闭，为什么要另起一个goroutine关闭，请看refer<sup>[1]</sup></p>
+<pre class="line-numbers language-go" data-language="go"><code class="language-go"><span class="token keyword">func</span> <span class="token function">newGracefulListener</span><span class="token punctuation">(</span>l net<span class="token punctuation">.</span>Listener<span class="token punctuation">)</span> <span class="token punctuation">(</span>gl <span class="token operator">*</span>gracefulListener<span class="token punctuation">)</span> <span class="token punctuation">&#123;</span>
+    gl <span class="token operator">=</span> <span class="token operator">&amp;</span>gracefulListener<span class="token punctuation">&#123;</span>Listener<span class="token punctuation">:</span> l<span class="token punctuation">,</span> stop<span class="token punctuation">:</span> <span class="token function">make</span><span class="token punctuation">(</span><span class="token keyword">chan</span> <span class="token builtin">error</span><span class="token punctuation">)</span><span class="token punctuation">&#125;</span>
+    <span class="token comment">// 这里为什么使用go 另起一个goroutine关闭请看文章末尾</span>
+    <span class="token keyword">go</span> <span class="token keyword">func</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">&#123;</span>
+        <span class="token boolean">_</span> <span class="token operator">=</span> <span class="token operator">&lt;-</span>gl<span class="token punctuation">.</span>stop
+        gl<span class="token punctuation">.</span>stopped <span class="token operator">=</span> <span class="token boolean">true</span>
+        gl<span class="token punctuation">.</span>stop <span class="token operator">&lt;-</span> gl<span class="token punctuation">.</span>Listener<span class="token punctuation">.</span><span class="token function">Close</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+    <span class="token punctuation">&#125;</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+    <span class="token keyword">return</span>
+<span class="token punctuation">&#125;</span>
+
+<span class="token keyword">func</span> <span class="token punctuation">(</span>gl <span class="token operator">*</span>gracefulListener<span class="token punctuation">)</span> <span class="token function">Close</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token builtin">error</span> <span class="token punctuation">&#123;</span>
+    <span class="token keyword">if</span> gl<span class="token punctuation">.</span>stopped <span class="token punctuation">&#123;</span>
+        <span class="token keyword">return</span> syscall<span class="token punctuation">.</span>EINVAL
+    <span class="token punctuation">&#125;</span>
+    gl<span class="token punctuation">.</span>stop <span class="token operator">&lt;-</span> <span class="token boolean">nil</span>
+    <span class="token keyword">return</span> <span class="token operator">&lt;-</span>gl<span class="token punctuation">.</span>stop
+<span class="token punctuation">&#125;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>我们的<code>Close</code>方法简单的向stop chan中发送了一个nil，让构造函数中的goroutine解除阻塞状态并执行Close操作。最终，goroutine执行的函数释放了<code>net.TCPListener</code>文件描述符。</p>
+<p>接下来，我们还需要一个<code>net.Conn</code>的变种来原子性的对wait group做减法</p>
+<pre class="line-numbers language-go" data-language="go"><code class="language-go"><span class="token keyword">type</span> gracefulConn <span class="token keyword">struct</span> <span class="token punctuation">&#123;</span>
+    net<span class="token punctuation">.</span>Conn
+<span class="token punctuation">&#125;</span>
+
+<span class="token keyword">func</span> <span class="token punctuation">(</span>w gracefulConn<span class="token punctuation">)</span> <span class="token function">Close</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token builtin">error</span> <span class="token punctuation">&#123;</span>
+    httpWg<span class="token punctuation">.</span><span class="token function">Done</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+    <span class="token keyword">return</span> w<span class="token punctuation">.</span>Conn<span class="token punctuation">.</span><span class="token function">Close</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
 <span class="token punctuation">&#125;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-<p>这是摘抄的代码，实现比较精妙，先看<code>encode</code>：</p>
-<ul>
-<li>a是非负整数，<code>a &gt;&gt; 31 == 00000000 00000000 00000000 00000000</code>，任何值亦或0都得原值。所以 <code>(a &lt;&lt; 1) ^ (a &gt;&gt; 31) == (a &lt;&lt; 1)</code></li>
-<li>a是负整数，<code>a &gt;&gt; 31 == 11111111 11111111 11111111 11111111</code>，任何数抑或1都得原始值的反，所以<code>(a &lt;&lt; 1) ^ (a &gt;&gt; 31) == ^(a &lt;&lt; 1)</code></li>
-</ul>
-<p>再来看<code>decode</code>，需要注意go中没有无符号右移操作，所以会有额外转换b的操作。另外就是一个数连续两次异或同一个数所得结果为原始值。</p>
-<ul>
-<li>b是非负整数，<code>-(b &amp; 1) == 00000000 00000000 00000000 00000000</code>，所以 encode中的<code>(a &gt;&gt; 31)</code> 等于 decode中的<code>-(b &amp; 1)</code>，那么连续两次抑或同一个值后b就等于<code>(a &lt;&lt; 1)</code>，在decode中继续对b进行无符号右移操作得到原始a的值。</li>
-<li>b是负数，<code>-(b &amp; 1) == 11111111 11111111 11111111 11111111</code>，后续同上。</li>
-</ul>
-<h4 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h4><p>使用<code>Varint</code>和<code>ZigZag</code>相互配合的编码形式，我们可以看出：</p>
-<ul>
-<li>对于绝对值相对较小的整数，我们可以节约空间，单独使用<code>Varint</code>的话所有小于<code>128</code>的无符号整数都可以使用一个字节表示。</li>
-<li>而对于绝对值较大的整数，我们可能会额外花费空间来存储</li>
-<li>在编码层面解决了“分隔符的问题”，每个字节的最高有效位为0时表示结束。所以即使有连续的多个<code>Varint</code>编码的数字我们也可以无需其他的分隔符通过编码对其分隔。</li>
-</ul>
-<p>这两个编码方式就是<code>Protocol Buffers</code>的精华，理解了这两个编码方式后接下来的内容就会很简单了。</p>
-<h3 id="Protocol-Buffers"><a href="#Protocol-Buffers" class="headerlink" title="Protocol Buffers"></a>Protocol Buffers</h3><h4 id="Message"><a href="#Message" class="headerlink" title="Message"></a>Message</h4><p><code>Protocol Buffers</code>中的实体是<code>Message</code>，一条<code>Message</code>是由一系列<code>key-value</code>组成。</p>
-<p>一个简单的<code>Message</code></p>
-<pre class="line-numbers language-none"><code class="language-none">message Test1 &#123;
-  optional int32 a &#x3D; 1;
-&#125;
-
-&#x2F;&#x2F; 当我们创建一个新的 Test1消息的时候，设置a为150，我们得到以下三个字节
-08 96 01
-
-&#x2F;&#x2F; 第一个字节, 高5位是varint编码形式，表示field number(每个键值对后面定义的序号)也就是1，低三位是wire type，这个后续讲解
-0 0001 000
-
-&#x2F;&#x2F; 后面两个字节是varint编码的 150
-1 001 0110  0 000 0001  &#x2F;&#x2F; 1 001 0110  &#x3D;&#x3D; 2 + 4 + 16 + 128 &#x3D;&#x3D; 150<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-<p>其实体为二进制，在其二进制实体中<code>key</code>不再由命名字符串组成，而是由 <code>field number</code> 以及 <code>wire type</code>组成。</p>
-<ul>
-<li>field number: 也就是定义在<code>.proto</code>文件中的键的序号。</li>
-<li>wire type: 定义了value的长度，定义如下：(3，4被废弃)</li>
-</ul>
-<table>
-<thead>
-<tr>
-<th>Type</th>
-<th>Meaning</th>
-<th>Used For</th>
-</tr>
-</thead>
-<tbody><tr>
-<td>0</td>
-<td>Varint</td>
-<td>int32, int64, uint32, uint64, sint32, sint64, bool, enum</td>
-</tr>
-<tr>
-<td>1</td>
-<td>64-bit</td>
-<td>fixed64, sfixed64, double</td>
-</tr>
-<tr>
-<td>2</td>
-<td>Length-delimited</td>
-<td>string, bytes, embedded messages, packed repeated fields</td>
-</tr>
-<tr>
-<td>5</td>
-<td>32-bit</td>
-<td>fixed32, sfixed32, float</td>
-</tr>
-</tbody></table>
-<p><code>key</code>的编码形式为<code>varint &lt;&lt; 3 | wire type</code>。也就是说，低三位表示 <code>wire type</code>，高5位表示<code>field number</code>，而又因为<code>varint</code>中第一位是标志位，所以当<code>key</code>只占有一个字节时，有效位数是4位，所以官方文档中说明：</p>
-<blockquote>
-<p>Note that field numbers in the range 1 through 15 take one byte to encode</p>
+<p>为了让我们上面所写的优雅启动方案生效，我们需要替换<code>server.Serve(l)</code>行为:</p>
+<pre class="line-numbers language-go" data-language="go"><code class="language-go">netListener <span class="token operator">=</span> <span class="token function">newGracefulListener</span><span class="token punctuation">(</span>l<span class="token punctuation">)</span>
+server<span class="token punctuation">.</span><span class="token function">Serve</span><span class="token punctuation">(</span>netListener<span class="token punctuation">)</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
+<p>最后补充：我们还需要避免客户端长时间不关闭连接的情况，所以我们创建server的时候可以指定超时时间：</p>
+<pre class="line-numbers language-go" data-language="go"><code class="language-go">server <span class="token operator">:=</span> <span class="token operator">&amp;</span>http<span class="token punctuation">.</span>Server<span class="token punctuation">&#123;</span>
+        Addr<span class="token punctuation">:</span>           <span class="token string">"0.0.0.0:8888"</span><span class="token punctuation">,</span>
+        ReadTimeout<span class="token punctuation">:</span>    <span class="token number">10</span> <span class="token operator">*</span> time<span class="token punctuation">.</span>Second<span class="token punctuation">,</span>
+        WriteTimeout<span class="token punctuation">:</span>   <span class="token number">10</span> <span class="token operator">*</span> time<span class="token punctuation">.</span>Second<span class="token punctuation">,</span>
+        MaxHeaderBytes<span class="token punctuation">:</span> <span class="token number">1</span> <span class="token operator">&lt;&lt;</span> <span class="token number">16</span><span class="token punctuation">&#125;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<h4 id="译者总结"><a href="#译者总结" class="headerlink" title="译者总结"></a>译者总结</h4><h4 id="译者注"><a href="#译者注" class="headerlink" title="译者注:"></a>译者注:</h4><ol>
+<li>refer<sup>[1]</sup><br><u>在上面的代码中使用goroutine的原因作者写了一部分，但我并没有读懂，但幸好在评论中，<a target="_blank" rel="noopener" href="https://disqus.com/by/disqus_uypMWCNAEC/">jokingus</a>问道：如果用下面的方式，是否就不需要在<code>newGracefulListener</code>中使用那个goroutine函数了</u><pre class="line-numbers language-go" data-language="go"><code class="language-go"><span class="token keyword">func</span> <span class="token punctuation">(</span>gl <span class="token operator">*</span>gracefulListener<span class="token punctuation">)</span> <span class="token function">Close</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token builtin">error</span> <span class="token punctuation">&#123;</span> 
+    <span class="token comment">// some code</span>
+    gl<span class="token punctuation">.</span>Listener<span class="token punctuation">.</span><span class="token function">Close</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+<span class="token punctuation">&#125;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span></span></code></pre>
+作者回复道：<blockquote>
+<p>Honestly, I cannot fathom why there would need to be a goroutine for this, and simply doing gl.Listener.Close() like you suggest wouldn’t work…. May be there is some reason that is escaping me presently, or perhaps I just didn’t know what I was doing? If you get to the bottom of it, would you post here, so I can correct the post if this goroutine business is wrong?</p>
 </blockquote>
+</li>
+</ol>
+<p><u>作者自己也较为疑惑，但表示像<a target="_blank" rel="noopener" href="https://disqus.com/by/disqus_uypMWCNAEC/">jokingus</a>所提到的这种方式是行不通的</u></p>
+<p><u>译者的个人理解：在绝大多数情况下，需要一个goroutine(可以称之为主goroutine)来创建socket，监听该socket，并accept直到有请求到达，当请求到来之后再另起goroutine进行处理。首先因为accept一般处于主goroutine中，且其是一个阻塞操作，如果我们想在accept执行后关闭socket一般来说有两个方法：</u></p>
 <ul>
-<li>当<code>wire type</code>为0时，value表现为：<ul>
-<li>无符号整数为正常的varint，但如果传入负数，就会保存负数的补码，长度会很大</li>
-<li>有符号整数。ZigZag<ul>
-<li><code>(n &lt;&lt; 1) ^ (n &gt;&gt; 31)</code> sint32</li>
-<li><code>(n &lt;&lt; 1) ^ (n &gt;&gt; 63)</code> sint64</li>
+<li><u>为accept设置一个超时时间，到达超时时间后，检测是否需要close socket，如果需要就关闭。但这样的话我们的超时时间可定不能设置太大，这样结束就不够灵敏，但设置的太小，就会对性能影响很大，总之来说不够优雅。</u></li>
+<li><u>accept方法可以一直阻塞，当我们需要close socket的时候，在另一个goroutine执行流中关闭socket，这样相对来说就比较优雅了，作者所使用的方法就是这种</u></li>
 </ul>
-</li>
-</ul>
-</li>
-<li>当<code>wire type</code>为1时，value就是固定占用8个字节</li>
-<li>当<code>wire type</code>为5时，value就是固定占用4个字节</li>
-<li>当<code>wire type</code>为2时，value表现为：<ul>
-<li>首先是字节长度，使用Varint编码</li>
-<li>真正的数据</li>
-</ul>
-</li>
-</ul>
-<pre class="line-numbers language-none"><code class="language-none">message Test2 &#123;
-  optional string b &#x3D; 2;
-&#125;
-
-&#x2F;&#x2F; 首先 key 是
-0 0010 010  &#x2F;&#x2F; 低三位是wire type，值为2，最高位为标志位表示Varint编码结束，中间4位表示wire type的值
-
-&#x2F;&#x2F; 其次就是value了，如果value是testing，testing对应的16进制为 74 65 73 74 69 6e 67
-07 74 65 73 74 69 6e 67 &#x2F;&#x2F; 这就是value，第一个字节表示长度，后面跟对应的数据
-<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-<h4 id="嵌套字段"><a href="#嵌套字段" class="headerlink" title="嵌套字段"></a>嵌套字段</h4><pre class="line-numbers language-none"><code class="language-none">message Test1 &#123;
-  optional int32 a &#x3D; 1;
-&#125;
-
-&#x2F;&#x2F; 当我们创建一个新的 Test1消息的时候，设置a为150，我们得到以下三个字节
-08 96 01
-
-message Test3 &#123;
-  optional Test1 c &#x3D; 3;
-&#125;
-
-&#x2F;&#x2F; 嵌套字段wire type依然是2，如果我们实例化一个Test3消息，并且设置其中Test1消息的a字段为150，那么我们得到：
-1a 03 08 96 01
-&#x2F;&#x2F; 后面三个字节和之前的例子一致，第二个字节表示长度，第一个字节表示key<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-<h4 id="可选字段和重复字段"><a href="#可选字段和重复字段" class="headerlink" title="可选字段和重复字段"></a>可选字段和重复字段</h4><ul>
-<li>repeated字段编码方式<ul>
-<li>在<code>proto2</code>中定义的<code>repeated</code>字段，默认传输消息体时该字段会是0个或者多个键值对的方式传输，每个键值对遵循对应的规则。并且这些键值对有可能会和其他字段交叉排列，也就是这些键值对可能不会靠在一起，这些键值对之间的顺序是不会变的。</li>
-<li>而在<code>proto3</code>或者<code>proto2</code>中在<code>repeated</code>中添加了<code>[packed=true]</code>选项后(repeated字段 wire type必须为 0，1，5这种数字类型)，编码方式就变了，最终会只有一个键值对，键不变，值的话变为<code>Length-delimited</code>格式，首先是字节长度并使用Varint编码，后面是对应的数据。<pre class="line-numbers language-none"><code class="language-none">message Test4 &#123;
-  repeated int32 d &#x3D; 4 [packed&#x3D;true];
-&#125;
-
-&#x2F;&#x2F; 当构建一个Test4，并为d字段填充值 3, 270, 86942后
-22        &#x2F;&#x2F; key (field number 4, wire type 2)
-06        &#x2F;&#x2F; payload size (6 bytes)
-03        &#x2F;&#x2F; first element (varint 3)
-8E 02     &#x2F;&#x2F; second element (varint 270)
-9E A7 05  &#x2F;&#x2F; third element (varint 86942)<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre></li>
-<li>假如在一个message编码中一个非 repeated 字段具有多个键值对<ul>
-<li>对于数字字段或者字符串字段，解析器会将最后出现的键值对作为真正的值</li>
-<li>对于嵌入字段，解析器会首先解析第一个值，然后将第二个值merge到第一个值，以此类推。</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-<h4 id="字段顺序"><a href="#字段顺序" class="headerlink" title="字段顺序"></a>字段顺序</h4><p>在<code>proto</code>文件中，field number定义的顺序并不影响序列化。因为序列化实现细节可能会经常变动，所以 protocol buffer解析器 设计之初就要求能解析任意顺序的字段。因此，不同版本所生成的二进制序列可能不一致。</p>
-<h3 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h3><ul>
-<li><a target="_blank" rel="noopener" href="https://developers.google.com/protocol-buffers/docs/encoding">Encoding</a></li>
-<li><a target="_blank" rel="noopener" href="https://segmentfault.com/a/1190000020500985">详解varint编码原理</a></li>
-<li><a target="_blank" rel="noopener" href="https://blog.csdn.net/zgwangbo/article/details/51590186">小而巧的数字压缩算法：zigzag</a></li>
-</ul>
+<p><u>另外，也可以参考：<a target="_blank" rel="noopener" href="http://blog.fatedier.com/2016/02/19/how-to-shutdown-go-net-dot-listeners-gracefully/">Go中如何优雅地关闭net.Listener</a></u></p>
 
                 
             </div>
@@ -769,7 +633,7 @@ message Test3 &#123;
                     </i>
                 </span>
                 <span class="reprint-info">
-                    <a href="http://blog.mncu.top/2021/01/06/protocol-buffers-bian-ma-xiang-jie/">http://blog.mncu.top/2021/01/06/protocol-buffers-bian-ma-xiang-jie/</a>
+                    <a href="http://blog.mncu.top/2021/01/11/yi-go-you-ya-chong-qi/">http://blog.mncu.top/2021/01/11/yi-go-you-ya-chong-qi/</a>
                 </span>
             </div>
             <div class="reprint__notice">
@@ -807,20 +671,12 @@ message Test3 &#123;
                     
                         <div class="article-tag">
                             
-                                <a href="/tags/ProtocolBuffers/">
-                                    <span class="chip bg-color">ProtocolBuffers</span>
+                                <a href="/tags/go/">
+                                    <span class="chip bg-color">go</span>
                                 </a>
                             
-                                <a href="/tags/Varint/">
-                                    <span class="chip bg-color">Varint</span>
-                                </a>
-                            
-                                <a href="/tags/ZigZag/">
-                                    <span class="chip bg-color">ZigZag</span>
-                                </a>
-                            
-                                <a href="/tags/encode/">
-                                    <span class="chip bg-color">encode</span>
+                                <a href="/tags/endless/">
+                                    <span class="chip bg-color">endless</span>
                                 </a>
                             
                         </div>
@@ -864,9 +720,10 @@ message Test3 &#123;
 <article id="prenext-posts" class="prev-next articles">
     <div class="row article-row">
         
-        <div class="article col s12 m6" data-aos="fade-up">
+        <div class="article col s12 m6" data-aos="fade-up" data-aos="fade-up">
             <div class="article-badge left-badge text-color">
-                <i class="fas fa-chevron-left"></i>&nbsp;上一篇</div>
+                <i class="far fa-dot-circle"></i>&nbsp;本篇
+            </div>
             <div class="card">
                 <a href="/2021/01/11/yi-go-you-ya-chong-qi/">
                     <div class="card-image">
@@ -884,9 +741,9 @@ message Test3 &#123;
                         
                     </div>
                     <div class="publish-info">
-                        <span class="publish-date">
-                            <i class="far fa-clock fa-fw icon-date"></i>2021-01-11
-                        </span>
+                            <span class="publish-date">
+                                <i class="far fa-clock fa-fw icon-date"></i>2021-01-11
+                            </span>
                         <span class="publish-author">
                             
                             <i class="fas fa-user fa-fw"></i>
@@ -895,6 +752,7 @@ message Test3 &#123;
                         </span>
                     </div>
                 </div>
+
                 
                 <div class="card-action article-tags">
                     
@@ -917,13 +775,13 @@ message Test3 &#123;
                 下一篇&nbsp;<i class="fas fa-chevron-right"></i>
             </div>
             <div class="card">
-                <a href="/2021/01/06/go-nei-cun-mo-xing/">
+                <a href="/2021/01/06/protocol-buffers-bian-ma-xiang-jie/">
                     <div class="card-image">
                         
                         
-                        <img src="/medias/featureimages/19.jpg" class="responsive-img" alt="go内存模型">
+                        <img src="/medias/featureimages/11.jpg" class="responsive-img" alt="Protocol Buffers编码详解">
                         
-                        <span class="card-title">go内存模型</span>
+                        <span class="card-title">Protocol Buffers编码详解</span>
                     </div>
                 </a>
                 <div class="card-content article-content">
@@ -938,12 +796,8 @@ message Test3 &#123;
                             </span>
                         <span class="publish-author">
                             
-                            <i class="fas fa-bookmark fa-fw icon-category"></i>
-                            
-                            <a href="/categories/go/" class="post-category">
-                                    go
-                                </a>
-                            
+                            <i class="fas fa-user fa-fw"></i>
+                            MnCu
                             
                         </span>
                     </div>
@@ -951,16 +805,20 @@ message Test3 &#123;
                 
                 <div class="card-action article-tags">
                     
-                    <a href="/tags/go/">
-                        <span class="chip bg-color">go</span>
+                    <a href="/tags/ProtocolBuffers/">
+                        <span class="chip bg-color">ProtocolBuffers</span>
                     </a>
                     
-                    <a href="/tags/HappensBefore/">
-                        <span class="chip bg-color">HappensBefore</span>
+                    <a href="/tags/Varint/">
+                        <span class="chip bg-color">Varint</span>
                     </a>
                     
-                    <a href="/tags/MemoryModel/">
-                        <span class="chip bg-color">MemoryModel</span>
+                    <a href="/tags/ZigZag/">
+                        <span class="chip bg-color">ZigZag</span>
+                    </a>
+                    
+                    <a href="/tags/encode/">
+                        <span class="chip bg-color">encode</span>
                     </a>
                     
                 </div>
