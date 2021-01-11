@@ -4,7 +4,7 @@
 
 # Site
 title: MnCu's Blog
-subtitle: ''
+subtitle: 'MnCu'
 description: ''
 keywords:
 author: MnCu
@@ -106,4 +106,6 @@ theme: hexo-theme-matery
 # Deployment
 ## Docs: https://hexo.io/docs/one-command-deployment
 deploy:
-  type: ''
+  type: git
+  repo: git@github.com:mncu/mncu.github.io.git
+  branch: master

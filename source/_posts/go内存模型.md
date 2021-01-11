@@ -1,7 +1,12 @@
 ---
 title: go内存模型
 date: 2021-01-06 20:34:11
+categories:
+- go
 tags:
+- go
+- HappensBefore
+- MemoryModel
 ---
 
 **本文严重参考：[The Go Memory Model](https://golang.org/ref/mem)**
