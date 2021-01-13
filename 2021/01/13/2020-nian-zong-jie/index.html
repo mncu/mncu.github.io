@@ -4,7 +4,7 @@
 
 <head>
     <meta charset="utf-8">
-    <meta name="keywords" content="【译】Go优雅重启, MnCu&#39;s Blog">
+    <meta name="keywords" content="2020年总结, MnCu&#39;s Blog">
     <meta name="description" content="">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
@@ -16,7 +16,7 @@
     <!-- Global site tag (gtag.js) - Google Analytics -->
 
 
-    <title>【译】Go优雅重启 | MnCu&#39;s Blog</title>
+    <title>2020年总结 | MnCu&#39;s Blog</title>
     <link rel="icon" type="image/png" href="/favicon.png">
 
     <link rel="stylesheet" type="text/css" href="/libs/awesome/css/all.css">
@@ -298,12 +298,12 @@
 
 
 
-<div class="bg-cover pd-header post-cover" style="background-image: url('/medias/featureimages/23.jpg')">
+<div class="bg-cover pd-header post-cover" style="background-image: url('/medias/featureimages/16.jpg')">
     <div class="container" style="right: 0px;left: 0px;">
         <div class="row">
             <div class="col s12 m12 l12">
                 <div class="brand">
-                    <h1 class="description center-align post-title">【译】Go优雅重启</h1>
+                    <h1 class="description center-align post-title">2020年总结</h1>
                 </div>
             </div>
         </div>
@@ -419,27 +419,18 @@
                     
                     <div class="article-tag">
                         
-                            <a href="/tags/go/">
-                                <span class="chip bg-color">go</span>
+                            <a href="/tags/%E6%88%90%E9%95%BF/">
+                                <span class="chip bg-color">成长</span>
                             </a>
                         
-                            <a href="/tags/endless/">
-                                <span class="chip bg-color">endless</span>
+                            <a href="/tags/%E6%80%BB%E7%BB%93/">
+                                <span class="chip bg-color">总结</span>
                             </a>
                         
                     </div>
                     
                 </div>
                 <div class="col s5 right-align">
-                    
-                    <div class="post-cate">
-                        <i class="fas fa-bookmark fa-fw icon-category"></i>
-                        
-                            <a href="/categories/go/" class="post-category">
-                                go
-                            </a>
-                        
-                    </div>
                     
                 </div>
             </div>
@@ -448,7 +439,7 @@
                 
                 <div class="post-date info-break-policy">
                     <i class="far fa-calendar-minus fa-fw"></i>发布日期:&nbsp;&nbsp;
-                    2021-01-11
+                    2021-01-13
                 </div>
                 
 
@@ -457,14 +448,14 @@
                 
                 <div class="info-break-policy">
                     <i class="far fa-file-word fa-fw"></i>文章字数:&nbsp;&nbsp;
-                    2k
+                    4.3k
                 </div>
                 
 
                 
                 <div class="info-break-policy">
                     <i class="far fa-clock fa-fw"></i>阅读时长:&nbsp;&nbsp;
-                    8 分
+                    14 分
                 </div>
                 
 
@@ -482,150 +473,100 @@
 
         <div class="card-content article-card-content">
             <div id="articleContent">
-                <p><strong>原文 <a target="_blank" rel="noopener" href="https://grisha.org/blog/2014/06/03/graceful-restart-in-golang/">Graceful Restart in Golang</a></strong></p>
-<p><strong>作者 <a target="_blank" rel="noopener" href="https://grisha.org/">grisha</a></strong></p>
-<p><strong>声明：本文目的仅仅作为个人mark，所以在翻译的过程中参杂了自己的思想甚至改变了部分内容，其中有下划线的文字为译者添加。但由于译者水平有限，所写文字或者代码可能会误导读者，如发现文章有问题，请尽快告知，不胜感激。</strong></p>
-<hr>
-<h3 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h3><p>Update (Apr 2015): <a target="_blank" rel="noopener" href="https://github.com/fvbock">Florian von Bock</a>已经根据本文实现了一个叫做<a target="_blank" rel="noopener" href="https://github.com/fvbock/endless">endless</a>的Go package</p>
-<p>大家知道，当我们用Go写的web服务器需要修改配置或者需要升级代码的时候我们需要重启服务器，如果你（像我一样）已经将优雅的重启视为理所当然，因为使用Golang你需要自己动手来做这些操作，所以你可能会发现这个方式非常方便。</p>
-<h3 id="什么是优雅重启"><a href="#什么是优雅重启" class="headerlink" title="什么是优雅重启"></a>什么是优雅重启</h3><p>本文中的优雅重启表现为两点</p>
-<ol>
-<li>进程在不关闭其所监听的端口的情况下重启</li>
-<li>重启过程中保证所有请求能被正确的处理</li>
-</ol>
-<h4 id="1-进程在不关闭其所监听的端口的情况下重启"><a href="#1-进程在不关闭其所监听的端口的情况下重启" class="headerlink" title="1.进程在不关闭其所监听的端口的情况下重启"></a>1.进程在不关闭其所监听的端口的情况下重启</h4><ul>
-<li>fork一个子进程，该子进程继承了父进程所监听的socket</li>
-<li>子进程执行初始化等操作，并最终开始接收该socket的请求</li>
-<li>父进程停止接收请求并等待当前处理的请求终止</li>
-</ul>
-<h5 id="fork一个子进程"><a href="#fork一个子进程" class="headerlink" title="fork一个子进程"></a>fork一个子进程</h5><p>有不止一种方法fork一个子进程，但在这种情况下推荐<a target="_blank" rel="noopener" href="https://golang.org/pkg/os/exec/#Command">exec.Command</a>，因为<a target="_blank" rel="noopener" href="https://golang.org/pkg/os/exec/#Cmd">Cmd</a>结构提供了一个字段<code>ExtraFiles</code>，该字段(注意不支持windows)为子进程额外地指定了需要继承的额外的文件描述符，不包含<code>std_in, std_out, std_err</code>。<br>需要注意的是，<code>ExtraFiles</code>描述中有这样一句话：</p>
-<blockquote>
-<p>If non-nil, entry i becomes file descriptor 3+i</p>
-</blockquote>
-<p>这句是说，索引位置为i的文件描述符传过去，最终会变为值为i+3的文件描述符。ie: 索引为0的文件描述符565, 最终变为文件描述符3</p>
-<pre class="line-numbers language-go" data-language="go"><code class="language-go">file <span class="token operator">:=</span> netListener<span class="token punctuation">.</span><span class="token function">File</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token comment">// this returns a Dup()</span>
-path <span class="token operator">:=</span> <span class="token string">"/path/to/executable"</span>
-args <span class="token operator">:=</span> <span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token builtin">string</span><span class="token punctuation">&#123;</span>
-    <span class="token string">"-graceful"</span><span class="token punctuation">&#125;</span>
-
-cmd <span class="token operator">:=</span> exec<span class="token punctuation">.</span><span class="token function">Command</span><span class="token punctuation">(</span>path<span class="token punctuation">,</span> args<span class="token operator">...</span><span class="token punctuation">)</span>
-cmd<span class="token punctuation">.</span>Stdout <span class="token operator">=</span> os<span class="token punctuation">.</span>Stdout
-cmd<span class="token punctuation">.</span>Stderr <span class="token operator">=</span> os<span class="token punctuation">.</span>Stderr
-cmd<span class="token punctuation">.</span>ExtraFiles <span class="token operator">=</span> <span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token operator">*</span>os<span class="token punctuation">.</span>File<span class="token punctuation">&#123;</span>file<span class="token punctuation">&#125;</span>
-
-err <span class="token operator">:=</span> cmd<span class="token punctuation">.</span><span class="token function">Start</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
-<span class="token keyword">if</span> err <span class="token operator">!=</span> <span class="token boolean">nil</span> <span class="token punctuation">&#123;</span>
-    log<span class="token punctuation">.</span><span class="token function">Fatalf</span><span class="token punctuation">(</span><span class="token string">"gracefulRestart: Failed to launch, error: %v"</span><span class="token punctuation">,</span> err<span class="token punctuation">)</span>
-<span class="token punctuation">&#125;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-<p>上面的代码中，<code>netListener</code>是一个<a target="_blank" rel="noopener" href="https://golang.org/pkg/net/#Listener">net.Listener</a>类型的指针，path变量则是我们要更新的新的可执行文件的路径。</p>
-<p>需要注意的是：上面<code>netListener.File()</code>与<a target="_blank" rel="noopener" href="http://pubs.opengroup.org/onlinepubs/009695399/functions/dup.html">dup</a>函数类似，返回的是一个拷贝的文件描述符。另外，该文件描述符不应该设置<a target="_blank" rel="noopener" href="http://pubs.opengroup.org/onlinepubs/009695399/functions/fcntl.html">FD_CLOEXEC</a>标识，这将会导致出现我们不想要的结果：子进程的该文件描述符被关闭。</p>
-<p>你可能会想到可以使用命令行参数把该文件描述符的值传递给子进程，但相对来说，我使用的这种方式更为简单</p>
-<p>最终，<code>args</code>数组包含了一个<code>-graceful</code>选项，你的进程需要以某种方式通知子进程要复用父进程的描述符而不是新打开一个。</p>
-<h5 id="子进程初始化"><a href="#子进程初始化" class="headerlink" title="子进程初始化"></a>子进程初始化</h5><pre class="line-numbers language-go" data-language="go"><code class="language-go">server <span class="token operator">:=</span> <span class="token operator">&amp;</span>http<span class="token punctuation">.</span>Server<span class="token punctuation">&#123;</span>Addr<span class="token punctuation">:</span> <span class="token string">"0.0.0.0:8888"</span><span class="token punctuation">&#125;</span>
-
-<span class="token keyword">var</span> gracefulChild <span class="token builtin">bool</span>
-<span class="token keyword">var</span> l net<span class="token punctuation">.</span>Listever
-<span class="token keyword">var</span> err <span class="token builtin">error</span>
-
-flag<span class="token punctuation">.</span><span class="token function">BoolVar</span><span class="token punctuation">(</span><span class="token operator">&amp;</span>gracefulChild<span class="token punctuation">,</span> <span class="token string">"graceful"</span><span class="token punctuation">,</span> <span class="token boolean">false</span><span class="token punctuation">,</span> <span class="token string">"listen on fd open 3 (internal use only)"</span><span class="token punctuation">)</span>
-
-<span class="token keyword">if</span> gracefulChild <span class="token punctuation">&#123;</span>
-    log<span class="token punctuation">.</span><span class="token function">Print</span><span class="token punctuation">(</span><span class="token string">"main: Listening to existing file descriptor 3."</span><span class="token punctuation">)</span>
-    f <span class="token operator">:=</span> os<span class="token punctuation">.</span><span class="token function">NewFile</span><span class="token punctuation">(</span><span class="token number">3</span><span class="token punctuation">,</span> <span class="token string">""</span><span class="token punctuation">)</span>
-    l<span class="token punctuation">,</span> err <span class="token operator">=</span> net<span class="token punctuation">.</span><span class="token function">FileListener</span><span class="token punctuation">(</span>f<span class="token punctuation">)</span>
-<span class="token punctuation">&#125;</span> <span class="token keyword">else</span> <span class="token punctuation">&#123;</span>
-    log<span class="token punctuation">.</span><span class="token function">Print</span><span class="token punctuation">(</span><span class="token string">"main: Listening on a new file descriptor."</span><span class="token punctuation">)</span>
-    l<span class="token punctuation">,</span> err <span class="token operator">=</span> net<span class="token punctuation">.</span><span class="token function">Listen</span><span class="token punctuation">(</span><span class="token string">"tcp"</span><span class="token punctuation">,</span> server<span class="token punctuation">.</span>Addr<span class="token punctuation">)</span>
-<span class="token punctuation">&#125;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-<h5 id="通知父进程停止"><a href="#通知父进程停止" class="headerlink" title="通知父进程停止"></a>通知父进程停止</h5><pre class="line-numbers language-go" data-language="go"><code class="language-go"><span class="token keyword">if</span> gracefulChild <span class="token punctuation">&#123;</span>
-    parent <span class="token operator">:=</span> syscall<span class="token punctuation">.</span><span class="token function">Getppid</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
-    log<span class="token punctuation">.</span><span class="token function">Printf</span><span class="token punctuation">(</span><span class="token string">"main: Killing parent pid: %v"</span><span class="token punctuation">,</span> parent<span class="token punctuation">)</span>
-    syscall<span class="token punctuation">.</span><span class="token function">Kill</span><span class="token punctuation">(</span>parent<span class="token punctuation">,</span> syscall<span class="token punctuation">.</span>SIGTERM<span class="token punctuation">)</span>
-<span class="token punctuation">&#125;</span>
-
-server<span class="token punctuation">.</span><span class="token function">Serve</span><span class="token punctuation">(</span>l<span class="token punctuation">)</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-<h5 id="父进程停止接收请求并等待当前所处理的所有请求结束"><a href="#父进程停止接收请求并等待当前所处理的所有请求结束" class="headerlink" title="父进程停止接收请求并等待当前所处理的所有请求结束"></a>父进程停止接收请求并等待当前所处理的所有请求结束</h5><p>为了做到这一点我们需要使用<a target="_blank" rel="noopener" href="https://golang.org/pkg/sync/#WaitGroup">sync.WaitGroup</a>来保证对当前打开的连接的追踪，基本上就是：每当接收一个新的请求时，给wait group做原子性加法，当请求结束时给wait group做原子性减法。也就是说wait group存储了当前正在处理的请求的数量</p>
-<pre class="line-numbers language-go" data-language="go"><code class="language-go"><span class="token keyword">var</span> httpWg sync<span class="token punctuation">.</span>WaitGroup<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
-<p>匆匆一瞥，我发现go中的http标准库并没有为Accept()和Close()提供钩子函数，但这就到了<code>interface</code>展现其魔力的时候了(非常感谢<a target="_blank" rel="noopener" href="http://nella.org/jra/"> Jeff R. Allen</a>的这篇<a target="_blank" rel="noopener" href="http://blog.nella.org/zero-downtime-upgrades-of-tcp-servers-in-go/">文章</a>)</p>
-<p>下面是一个例子，该例子实现了每当执行Accept()的时候会原子性增加wait group。首先我们先继承<code>net.Listener</code>实现一个结构体</p>
-<pre class="line-numbers language-go" data-language="go"><code class="language-go"><span class="token keyword">type</span> gracefulListener <span class="token keyword">struct</span> <span class="token punctuation">&#123;</span>
-    net<span class="token punctuation">.</span>Listener
-    stop    <span class="token keyword">chan</span> <span class="token builtin">error</span>
-    stopped <span class="token builtin">bool</span>
-<span class="token punctuation">&#125;</span>
-
-<span class="token keyword">func</span> <span class="token punctuation">(</span>gl <span class="token operator">*</span>gracefulListener<span class="token punctuation">)</span> <span class="token function">File</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">*</span>os<span class="token punctuation">.</span>File <span class="token punctuation">&#123;</span>
-    tl <span class="token operator">:=</span> gl<span class="token punctuation">.</span>Listener<span class="token punctuation">.</span><span class="token punctuation">(</span><span class="token operator">*</span>net<span class="token punctuation">.</span>TCPListener<span class="token punctuation">)</span>
-    fl<span class="token punctuation">,</span> <span class="token boolean">_</span> <span class="token operator">:=</span> tl<span class="token punctuation">.</span><span class="token function">File</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
-    <span class="token keyword">return</span> fl
-<span class="token punctuation">&#125;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-<p>接下来我们覆盖Accept方法(暂时先忽略<code>gracefulConn</code>)</p>
-<pre class="line-numbers language-go" data-language="go"><code class="language-go"><span class="token keyword">func</span> <span class="token punctuation">(</span>gl <span class="token operator">*</span>gracefulListener<span class="token punctuation">)</span> <span class="token function">Accept</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">(</span>c net<span class="token punctuation">.</span>Conn<span class="token punctuation">,</span> err <span class="token builtin">error</span><span class="token punctuation">)</span> <span class="token punctuation">&#123;</span>
-    c<span class="token punctuation">,</span> err <span class="token operator">=</span> gl<span class="token punctuation">.</span>Listener<span class="token punctuation">.</span><span class="token function">Accept</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
-    <span class="token keyword">if</span> err <span class="token operator">!=</span> <span class="token boolean">nil</span> <span class="token punctuation">&#123;</span>
-        <span class="token keyword">return</span>
-    <span class="token punctuation">&#125;</span>
-
-    c <span class="token operator">=</span> gracefulConn<span class="token punctuation">&#123;</span>Conn<span class="token punctuation">:</span> c<span class="token punctuation">&#125;</span>
-
-    httpWg<span class="token punctuation">.</span><span class="token function">Add</span><span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">)</span>
-    <span class="token keyword">return</span>
-<span class="token punctuation">&#125;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-<p>我们还需要一个构造函数以及一个Close方法，构造函数中另起一个goroutine关闭，为什么要另起一个goroutine关闭，请看refer<sup>[1]</sup></p>
-<pre class="line-numbers language-go" data-language="go"><code class="language-go"><span class="token keyword">func</span> <span class="token function">newGracefulListener</span><span class="token punctuation">(</span>l net<span class="token punctuation">.</span>Listener<span class="token punctuation">)</span> <span class="token punctuation">(</span>gl <span class="token operator">*</span>gracefulListener<span class="token punctuation">)</span> <span class="token punctuation">&#123;</span>
-    gl <span class="token operator">=</span> <span class="token operator">&amp;</span>gracefulListener<span class="token punctuation">&#123;</span>Listener<span class="token punctuation">:</span> l<span class="token punctuation">,</span> stop<span class="token punctuation">:</span> <span class="token function">make</span><span class="token punctuation">(</span><span class="token keyword">chan</span> <span class="token builtin">error</span><span class="token punctuation">)</span><span class="token punctuation">&#125;</span>
-    <span class="token comment">// 这里为什么使用go 另起一个goroutine关闭请看文章末尾</span>
-    <span class="token keyword">go</span> <span class="token keyword">func</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">&#123;</span>
-        <span class="token boolean">_</span> <span class="token operator">=</span> <span class="token operator">&lt;-</span>gl<span class="token punctuation">.</span>stop
-        gl<span class="token punctuation">.</span>stopped <span class="token operator">=</span> <span class="token boolean">true</span>
-        gl<span class="token punctuation">.</span>stop <span class="token operator">&lt;-</span> gl<span class="token punctuation">.</span>Listener<span class="token punctuation">.</span><span class="token function">Close</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
-    <span class="token punctuation">&#125;</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
-    <span class="token keyword">return</span>
-<span class="token punctuation">&#125;</span>
-
-<span class="token keyword">func</span> <span class="token punctuation">(</span>gl <span class="token operator">*</span>gracefulListener<span class="token punctuation">)</span> <span class="token function">Close</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token builtin">error</span> <span class="token punctuation">&#123;</span>
-    <span class="token keyword">if</span> gl<span class="token punctuation">.</span>stopped <span class="token punctuation">&#123;</span>
-        <span class="token keyword">return</span> syscall<span class="token punctuation">.</span>EINVAL
-    <span class="token punctuation">&#125;</span>
-    gl<span class="token punctuation">.</span>stop <span class="token operator">&lt;-</span> <span class="token boolean">nil</span>
-    <span class="token keyword">return</span> <span class="token operator">&lt;-</span>gl<span class="token punctuation">.</span>stop
-<span class="token punctuation">&#125;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-<p>我们的<code>Close</code>方法简单的向stop chan中发送了一个nil，让构造函数中的goroutine解除阻塞状态并执行Close操作。最终，goroutine执行的函数释放了<code>net.TCPListener</code>文件描述符。</p>
-<p>接下来，我们还需要一个<code>net.Conn</code>的变种来原子性的对wait group做减法</p>
-<pre class="line-numbers language-go" data-language="go"><code class="language-go"><span class="token keyword">type</span> gracefulConn <span class="token keyword">struct</span> <span class="token punctuation">&#123;</span>
-    net<span class="token punctuation">.</span>Conn
-<span class="token punctuation">&#125;</span>
-
-<span class="token keyword">func</span> <span class="token punctuation">(</span>w gracefulConn<span class="token punctuation">)</span> <span class="token function">Close</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token builtin">error</span> <span class="token punctuation">&#123;</span>
-    httpWg<span class="token punctuation">.</span><span class="token function">Done</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
-    <span class="token keyword">return</span> w<span class="token punctuation">.</span>Conn<span class="token punctuation">.</span><span class="token function">Close</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
-<span class="token punctuation">&#125;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-<p>为了让我们上面所写的优雅启动方案生效，我们需要替换<code>server.Serve(l)</code>行为:</p>
-<pre class="line-numbers language-go" data-language="go"><code class="language-go">netListener <span class="token operator">=</span> <span class="token function">newGracefulListener</span><span class="token punctuation">(</span>l<span class="token punctuation">)</span>
-server<span class="token punctuation">.</span><span class="token function">Serve</span><span class="token punctuation">(</span>netListener<span class="token punctuation">)</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
-<p>最后补充：我们还需要避免客户端长时间不关闭连接的情况，所以我们创建server的时候可以指定超时时间：</p>
-<pre class="line-numbers language-go" data-language="go"><code class="language-go">server <span class="token operator">:=</span> <span class="token operator">&amp;</span>http<span class="token punctuation">.</span>Server<span class="token punctuation">&#123;</span>
-        Addr<span class="token punctuation">:</span>           <span class="token string">"0.0.0.0:8888"</span><span class="token punctuation">,</span>
-        ReadTimeout<span class="token punctuation">:</span>    <span class="token number">10</span> <span class="token operator">*</span> time<span class="token punctuation">.</span>Second<span class="token punctuation">,</span>
-        WriteTimeout<span class="token punctuation">:</span>   <span class="token number">10</span> <span class="token operator">*</span> time<span class="token punctuation">.</span>Second<span class="token punctuation">,</span>
-        MaxHeaderBytes<span class="token punctuation">:</span> <span class="token number">1</span> <span class="token operator">&lt;&lt;</span> <span class="token number">16</span><span class="token punctuation">&#125;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-<h4 id="译者总结"><a href="#译者总结" class="headerlink" title="译者总结"></a>译者总结</h4><h4 id="译者注"><a href="#译者注" class="headerlink" title="译者注:"></a>译者注:</h4><ol>
-<li>refer<sup>[1]</sup><br><u>在上面的代码中使用goroutine的原因作者写了一部分，但我并没有读懂，但幸好在评论中，<a target="_blank" rel="noopener" href="https://disqus.com/by/disqus_uypMWCNAEC/">jokingus</a>问道：如果用下面的方式，是否就不需要在<code>newGracefulListener</code>中使用那个goroutine函数了</u><pre class="line-numbers language-go" data-language="go"><code class="language-go"><span class="token keyword">func</span> <span class="token punctuation">(</span>gl <span class="token operator">*</span>gracefulListener<span class="token punctuation">)</span> <span class="token function">Close</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token builtin">error</span> <span class="token punctuation">&#123;</span> 
-    <span class="token comment">// some code</span>
-    gl<span class="token punctuation">.</span>Listener<span class="token punctuation">.</span><span class="token function">Close</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
-<span class="token punctuation">&#125;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span></span></code></pre>
-作者回复道：<blockquote>
-<p>Honestly, I cannot fathom why there would need to be a goroutine for this, and simply doing gl.Listener.Close() like you suggest wouldn’t work…. May be there is some reason that is escaping me presently, or perhaps I just didn’t know what I was doing? If you get to the bottom of it, would you post here, so I can correct the post if this goroutine business is wrong?</p>
-</blockquote>
-</li>
-</ol>
-<p><u>作者自己也较为疑惑，但表示像<a target="_blank" rel="noopener" href="https://disqus.com/by/disqus_uypMWCNAEC/">jokingus</a>所提到的这种方式是行不通的</u></p>
-<p><u>译者的个人理解：在绝大多数情况下，需要一个goroutine(可以称之为主goroutine)来创建socket，监听该socket，并accept直到有请求到达，当请求到来之后再另起goroutine进行处理。首先因为accept一般处于主goroutine中，且其是一个阻塞操作，如果我们想在accept执行后关闭socket一般来说有两个方法：</u></p>
+                <p>距离上一次总结<a href="https://blog.mncu.top/2019/05/07/jin-ji-nian-zong-jie/">近几年总结</a>已经过去近两年了。倒也不是我懒，只是因为中间的阶段性总结包含私密的事被记在我的小本本上了。</p>
+<p>博客很久也没有更新了，但实际自己还是在写，尽管写的没有那么频繁。主要写到有道云笔记了，另外最近几天搭建了一个博客，以后打算把内容都搬过去<a href="https://blog.mncu.top/">地址</a>，里面的很多东西都还不完善，后续会持续改进的。</p>
+<p>再就是这个也不仅仅是2020年总结，理论上应该是“上次总结之后的总结”</p>
+<h3 id="回顾"><a href="#回顾" class="headerlink" title="回顾"></a>回顾</h3><h4 id="第二份工作"><a href="#第二份工作" class="headerlink" title="第二份工作"></a>第二份工作</h4><h5 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h5><p>第二份工作从2018-10持续到2019-06，这份经历让我终身难忘。这不到两年的时间里：</p>
 <ul>
-<li><u>为accept设置一个超时时间，到达超时时间后，检测是否需要close socket，如果需要就关闭。但这样的话我们的超时时间可定不能设置太大，这样结束就不够灵敏，但设置的太小，就会对性能影响很大，总之来说不够优雅。</u></li>
-<li><u>accept方法可以一直阻塞，当我们需要close socket的时候，在另一个goroutine执行流中关闭socket，这样相对来说就比较优雅了，作者所使用的方法就是这种</u></li>
+<li>结识了一个十分不错的leader</li>
+<li>写了一个我3年工作生涯来最得意的项目</li>
+<li>邂逅了一个令我难忘的姑娘</li>
+<li>度过了一段痛苦愤怒的时光</li>
+<li>最后带着释怀又复杂的心离职</li>
 </ul>
-<p><u>另外，也可以参考：<a target="_blank" rel="noopener" href="http://blog.fatedier.com/2016/02/19/how-to-shutdown-go-net-dot-listeners-gracefully/">Go中如何优雅地关闭net.Listener</a></u></p>
+<p>这里面部分细节我不会详细描述，主要是我很多都记在小本本上了，不太想让别人知道。。</p>
+<h5 id="平淡"><a href="#平淡" class="headerlink" title="平淡"></a>平淡</h5><p>初来这家公司的时候就经历了一个主要产品线的后端重构，为期3个月进行封闭开发，尽管项目比较赶但实际上没有什么技术上特别高大上的地方。主要难点在于：</p>
+<ul>
+<li>后端几乎都是新招来的人，对项目不熟</li>
+<li>新同事之间需要磨合，且相对来说有部分不够靠谱的人</li>
+<li>部分业务较为复杂，但因为不够清楚中间会有什么坑，所以实现上并没有真正重构</li>
+<li>时间给的很少</li>
+</ul>
+<p>因为以上的原因，我们重构并不是那么舒服，在中间因为我的参与贡献度非常高，还临时负责了一小段时间的项目进度管理，但那时候还是不够稳重，之前做事总是撸起袖子开干，也没有想过什么规划，导致自己做事逻辑性较差；另外，我对合作的不够靠谱的同事容忍度有些低，所以管理的我个人认为是一塌糊涂。。。</p>
+<p>但总之，尽管过程相对艰难，但最终结果还是较为满意的。</p>
+<p>后来公司战略方向转变，这个本来被寄予厚望的项目就暂时搁置，同时裁了一批人，也不知道我算幸运还是不幸，因为表现还算不错没有被裁掉。</p>
+<p>因为项目主要是维护，不再开发新的功能，所以我的工作变的清闲起来，也就是在这段时间写了“近几年总结”。也开始学习Go语言，本来以为我会在这里继续平平淡淡的度过两年然后离职找个Go语言的职位，没想到转折忽然到来。</p>
+<p>一天晚上我学习Go语言到很晚，公司的同事几乎走光了，我看到我的老大(下面简称他为T)还在工位上，想到最近都没怎么和老大交流，感觉现在是时候上去舔一波了。。</p>
+<p>于是过去问他最近在干啥啊，咋这么忙，他说在做曲谱解析相关的工作，然后他问我最近在干嘛，我坦诚的说了我基本啥事没有，可能T揣着小伙子这么优秀我不能让你闲着的心态问我有没有兴趣做曲谱相关的工作，我尽管没啥太大兴趣，但感觉自己一直闲下去不是办法，爽快答应。<strong>当时真的没想到这个项目会是我最得意的项目。所以我们某些看似不重要的选择对我们的影响可能真的超乎意料</strong></p>
+<h5 id="得意"><a href="#得意" class="headerlink" title="得意"></a>得意</h5><p>曲谱解析实际上就是将MusicXML转换为类Midi数据和SVG图片数据，并把类Midi和SVG关联起来。类Midi用来播放，而SVG则用来展示，将他们关联起来后当播放的同时就能在SVG上对应的音符上产生我们想要的效果，而我们在SVG上选择对应的音符划分乐句也能对应到类Midi上。</p>
+<p>曲谱解析只是负责解析数据，对应的渲染以及事件处理还需要一个曲谱引擎来做，T敲定，我负责曲谱解析，他来做曲谱引擎，同时还有其他人负责曲谱编辑器，以及app开发。而T也是整个项目的负责人。</p>
+<p>刚接触曲谱解析时完全不知从何处下手，幸而T已经自己实现了一部分，我开始快速学习乐理知识，天天找打谱人员看谱子，问她们问题，跟她们熟了以后还过去蹭吃蹭喝。。。</p>
+<p>曲谱解析开发过程中，各种坑逐渐显现：反复、嵌套反复、同音连线换行问题、Barline的省略问题、duration的无法整除问题、音符的重叠省略问题、倚音的时值处理问题、连音的时值问题…… 各种各样稀奇古怪的问题接踵而来，但幸而我具有极强的解决问题能力，极强的执行力(在不犯拖延症的情况下)，许许多多的夜晚边抽烟边写代码到凌晨2点，很多时候睡梦中也在思考解决方案，总之，绝大多数问题迎刃而解，最终整个公司的16000首曲谱解析成功率达到了接近100%。</p>
+<p>尽管曲谱解析不属于后端技术，但是我确实从中收获了许许多多的自信，这个东西可以说完完全全就是我自己独立开发出来的，所有问题网上并没有解决方案，完全靠自己解决。这种成就感无法用语言来表达，只是这个项目的经验在我后端面试的时候用处不大。。</p>
+<p>过程中我也暴露了很多问题，比如不会深入思考实现过程中可能的问题，不会深入思考整体的架构层次，导致初始的代码十分晦涩。后来我自己重构了一版，自我感觉及其不错。</p>
+<p>当曲谱解析开发的差不多的时候，我开始承接了更多的工作：</p>
+<ul>
+<li>曲谱引擎有一部分我在做，</li>
+<li>同时曲谱编辑器我也会参与不少，</li>
+<li>另某些特殊的曲谱会解析错误导致我得不断修改曲谱解析代码，</li>
+<li>再就是之前刚来公司的第一个项目的维护工作也是我来做，</li>
+</ul>
+<p>最终导致我4条线同时作战，真的是焦头烂额。而T也是焦头烂额的状态，因为整个项目的开发完全达不到预期的开发速度，除了我以外其他人并没有特别的靠谱，而T也额外负责了很多工作，于是T只能把更多的工作交给我。。。</p>
+<h5 id="得意后的思考"><a href="#得意后的思考" class="headerlink" title="得意后的思考"></a>得意后的思考</h5><p>当时身心疲惫，我心态开始狂躁，愤怒，失衡。最终还是跟T发火了(尽管后来找他聊天他并没有在意)。当时我感到悔恨失落(因为我其实还是很喜欢T的，我们是双互之间的欣赏)我找了我第一家公司的老大(以下我们称他为W)谈心，W跟我说小伙子你发火确实不对，但T也有部分责任在里面，总之开导了我一翻，我随之解开心结。主动找T说明了情况，告诉他我现在在做的各种事，T分析了一番最终将第一个项目从我这里交给了其他人维护。<strong>我发现其实沟通很重要，很多情绪不要压抑在心底，一定要及时表达，这样早发现问题早解决</strong></p>
+<p>再就是项目其他人员之所以开发进度缓慢，我个人有一些理解：主要就是因为某些功能需要学习乐理知识后才能开发，而很多人似乎自己给自己设置了天花板，并不会主动去学习乐理知识，很多人仅仅停留在我只要开发页面就好了。可能他们也有自己的理由：比如学习这个有什么用，以后求职能用到嘛？我不想对这个做任何评价，我只想说，<strong>目前</strong>我认为，做一个靠谱的人需要：</p>
+<ul>
+<li>技术能力要可以，一般来说技术能力可以的人学习能力不会差</li>
+<li>脾气性格要可以，严肃、活泼</li>
+<li>执行力要可以</li>
+</ul>
+<p>这三者缺一不可，另外“可以”是指要处在平均线以上就好，并不要求太高，而目前看来靠谱的人在技术圈是十分受欢迎的。</p>
+<p>另外，在整个项目的推进过程中，有很多问题，最主要的问题在于：</p>
+<ul>
+<li>项目排期并不是由开发决定的，而是由业务人员决定</li>
+<li>产品经理，项目经理或者话语权较小或者与业务人员绑定到一起，严重失职</li>
+<li>开发人员话语权过小</li>
+</ul>
+<p>当然，这些问题可能主要原因在于公司的高层出现问题，而我职位较低，接触不到这些东西，无法作出有效评价。</p>
+<p>总之吧，可能是因为上面的原因再加上T有了孩子，T选择离职，并把大多数项目的维护工作交给我来做。</p>
+<h5 id="痛苦"><a href="#痛苦" class="headerlink" title="痛苦"></a>痛苦</h5><p>接下来就到了我的痛苦时期。</p>
+<p>T走了以后我的直属领导变为C，但是我所负责的业务的领导是X，所以导致给X干活然后C给我考评。。。不出意外的是我拿到了我进入公司以来的最低分，之前T在的时候我一直是小组最高的。。。</p>
+<p>另外我对C并不是特别认同，并不认为他是一个非常靠谱的人，所以自己也没有真正吧他当leader看待。但是应有的尊重还是有的，这点不知道我做的对还是错</p>
+<p>另外因为开发了曲谱解析，曲谱引擎，曲谱编辑器，T走了以后我是对这快儿最熟悉的人了，所以这块业务的后续开发继续由我来负责</p>
+<p>当我负责起以后我才发现之前的痛苦并没有什么。。</p>
+<ul>
+<li>所有的排期都是业务人员定</li>
+<li>每天的会议其实没有什么作用，纯粹浪费时间，我估计唯一的作用就是让产品能了解当前进度，但是扯皮占据绝大多数时间，往往开完会以后内心烦躁，严重影响效率</li>
+<li>当进度无法保证时，所有压力来到我这里，我只是觉得我承受了这个年龄段不该承受的压力。。</li>
+<li>再就是整个项目过程中急导致混乱，混乱导致更急，而我似乎感觉无力扭转这种困境</li>
+</ul>
+<p>但最终结果还算不错，因为所有的功能都按计划如期上线，而且似乎现在的整个业务营业额达到了1个亿，尽管我已经离职了，但我却是还是很开心，毕竟整个项目里面许许多多都是我的心血。</p>
+<p>总之吧，当整个项目稳定后，我的耐心也消耗殆尽，加上还有一些其他不想描述的事让我痛苦难受，所以我选择了离职。离职是我在项目开发过程中就想好的，我本来就打算开发完成后离职，尽量做一个靠谱的人，只是到了最后阶段可能部分事情做的并不靠谱。。。但我其实也并没有太多自责，毕竟我认为我的付出远远超出了这些。</p>
+<h5 id="释怀"><a href="#释怀" class="headerlink" title="释怀"></a>释怀</h5><p>现在我离职也有半年了，内心已经恢复过来。期间想起我最后离职的时候并没有写离职申请，所以在几个月的时间陆陆续续终于完成，在这里发一下，人名/项目名隐去：</p>
+<blockquote>
+</blockquote>
+<p>在过去的一年多时间里，公司给予了我良好的学习锻炼机会，尤记得初来公司时，参与了XM重构，开始了为期3个月的封闭开发，尽管过程相对艰难，但个人对最终结果较为满意，无论是技术架构上还是同同事交流沟通协作上都有了巨大的进步。只是最终XM与公司战略不符，项目作为维护状态，略有遗憾。后转到用户端组，因个人主要技术栈是服务端，对客户端不熟，内心较为彷徨，但幸而机缘巧合参与了ZN中的新曲谱的开发工作，尽管过程多曲折虐心，但最终收获喜人，由对乐曲一窍不通的状态到3个月后知道了许许多多的曲谱基本知识，其中对曲谱解析等功能的开发更令我记忆犹新，无论是算法方面亦或是解决问题方面有了显而易见的提升，几乎有一种个人可独当一面的错觉。这段经历是在本公司最为难忘的经历，让自己意识到自己在这之前的很多工作仅仅是增删改查，并无特殊不可替代之处，且之前所追逐的不同语言不同端的高低之分确实十分幼稚，成长匪浅，受益颇深，大开眼界！后来开始开发了ZN的上课功能，因个人对曲谱数据较熟，且新曲谱大多数功能开发个人所有涉猎，遂承接了部分相对较为重要部分，看起来委受重任，内心欢喜。</p>
+<blockquote>
+<p>只是这一年多来，一直工作压力颇大，生活中也未曾注意消解排遣，终至心态不稳，内心焦躁，自感压力颇大且辜负许多重任，且自初出校园时已快三年，个人感觉须进大厂开眼界长见识一番，遂经过长时间的考虑终于下定决心申请离职。</p>
+</blockquote>
+<blockquote>
+<p>一年多来在公司认识许多各有特点、印象深刻的同事，虽可能因个人脾气火爆桀骜不驯导致部分收获友谊，部分心有间隙，但与其相处日常确实难以忘怀。T心性率真，富有魄力，能力出众，有大将风范；J外表严肃沉默，内心丰富，做事专一认真，深耕技术，技能全面；H初识感觉严肃高傲，熟悉后又感觉可亲而富有童真，思维敏捷；Y不声不显，内敛低调，才艺惊人，可为我山东优秀代表青年；H吃苦耐劳，认真仔细，脾气好到我生平仅见；C任劳任怨，脾气温和，关爱晚辈，处事周全；</p>
+</blockquote>
+<blockquote>
+<p>另感谢B与我之前谈话中对我表现的认可，回顾三年工作经历个人一直在努力追求别人的认可，尽管程度已没有之前那么纯粹；另感谢您分享的个人经历以及对经济的看法，对我塑造个人观念/思维影响颇大，当时谈话结束时忘了说谢谢，现在补一下，感谢。</p>
+</blockquote>
+<blockquote>
+<p>X简单纯粹，乐观而固执，尽管与您共事确实令我不爽，但不得不承认，您是一个具有独特且鲜明性格的人，而我也一直希望自己能够成为与众不同/个性鲜明的人；当然，在我看来，假如我的性格能按照我希望的方向培养，我肯定要比您讨喜的多。之前和您的聊天让我释怀许多，感谢您的信任支持理解，愿您能最终证明您走的是正确的路。</p>
+</blockquote>
+<blockquote>
+<p>最后，关于交接：…(此处省略)</p>
+</blockquote>
+<blockquote>
+<p>愿诸位身体健康，愿公司蒸蒸日上。</p>
+</blockquote>
+<h3 id="现在"><a href="#现在" class="headerlink" title="现在"></a>现在</h3><h4 id="第三份工作"><a href="#第三份工作" class="headerlink" title="第三份工作"></a>第三份工作</h4><p>第三份工作是一家做AI的公司。</p>
+<p>写到这里其实不是特别想写了，因为感觉在这里时间还是太短，但我还是很喜欢这里的。整个项目排期非常正规，很多我之前可能用两天就能开发完成的这里会排期一周，所以我也有很多时间学习提升自己。另外周围同事很多名校毕业，优秀靠谱的人比例要大一些。</p>
+<p>目前在这里还没有作出什么成绩，但我并不着急，我觉得是金子总会发光。</p>
+<p>愿我能如我所想的那样发光！</p>
 
                 
             </div>
@@ -652,7 +593,7 @@ server<span class="token punctuation">.</span><span class="token function">Serve
                     </i>
                 </span>
                 <span class="reprint-info">
-                    <a href="http://blog.mncu.top/2021/01/11/yi-go-you-ya-chong-qi/">http://blog.mncu.top/2021/01/11/yi-go-you-ya-chong-qi/</a>
+                    <a href="http://blog.mncu.top/2021/01/13/2020-nian-zong-jie/">http://blog.mncu.top/2021/01/13/2020-nian-zong-jie/</a>
                 </span>
             </div>
             <div class="reprint__notice">
@@ -690,12 +631,12 @@ server<span class="token punctuation">.</span><span class="token function">Serve
                     
                         <div class="article-tag">
                             
-                                <a href="/tags/go/">
-                                    <span class="chip bg-color">go</span>
+                                <a href="/tags/%E6%88%90%E9%95%BF/">
+                                    <span class="chip bg-color">成长</span>
                                 </a>
                             
-                                <a href="/tags/endless/">
-                                    <span class="chip bg-color">endless</span>
+                                <a href="/tags/%E6%80%BB%E7%BB%93/">
+                                    <span class="chip bg-color">总结</span>
                                 </a>
                             
                         </div>
@@ -739,9 +680,10 @@ server<span class="token punctuation">.</span><span class="token function">Serve
 <article id="prenext-posts" class="prev-next articles">
     <div class="row article-row">
         
-        <div class="article col s12 m6" data-aos="fade-up">
+        <div class="article col s12 m6" data-aos="fade-up" data-aos="fade-up">
             <div class="article-badge left-badge text-color">
-                <i class="fas fa-chevron-left"></i>&nbsp;上一篇</div>
+                <i class="far fa-dot-circle"></i>&nbsp;本篇
+            </div>
             <div class="card">
                 <a href="/2021/01/13/2020-nian-zong-jie/">
                     <div class="card-image">
@@ -759,9 +701,9 @@ server<span class="token punctuation">.</span><span class="token function">Serve
                         
                     </div>
                     <div class="publish-info">
-                        <span class="publish-date">
-                            <i class="far fa-clock fa-fw icon-date"></i>2021-01-13
-                        </span>
+                            <span class="publish-date">
+                                <i class="far fa-clock fa-fw icon-date"></i>2021-01-13
+                            </span>
                         <span class="publish-author">
                             
                             <i class="fas fa-user fa-fw"></i>
@@ -770,6 +712,7 @@ server<span class="token punctuation">.</span><span class="token function">Serve
                         </span>
                     </div>
                 </div>
+
                 
                 <div class="card-action article-tags">
                     
@@ -792,13 +735,13 @@ server<span class="token punctuation">.</span><span class="token function">Serve
                 下一篇&nbsp;<i class="fas fa-chevron-right"></i>
             </div>
             <div class="card">
-                <a href="/2021/01/06/protocol-buffers-bian-ma-xiang-jie/">
+                <a href="/2021/01/11/yi-go-you-ya-chong-qi/">
                     <div class="card-image">
                         
                         
-                        <img src="/medias/featureimages/11.jpg" class="responsive-img" alt="Protocol Buffers编码详解">
+                        <img src="/medias/featureimages/23.jpg" class="responsive-img" alt="【译】Go优雅重启">
                         
-                        <span class="card-title">Protocol Buffers编码详解</span>
+                        <span class="card-title">【译】Go优雅重启</span>
                     </div>
                 </a>
                 <div class="card-content article-content">
@@ -809,12 +752,16 @@ server<span class="token punctuation">.</span><span class="token function">Serve
                     </div>
                     <div class="publish-info">
                             <span class="publish-date">
-                                <i class="far fa-clock fa-fw icon-date"></i>2021-01-06
+                                <i class="far fa-clock fa-fw icon-date"></i>2021-01-11
                             </span>
                         <span class="publish-author">
                             
-                            <i class="fas fa-user fa-fw"></i>
-                            MnCu
+                            <i class="fas fa-bookmark fa-fw icon-category"></i>
+                            
+                            <a href="/categories/go/" class="post-category">
+                                    go
+                                </a>
+                            
                             
                         </span>
                     </div>
@@ -822,20 +769,12 @@ server<span class="token punctuation">.</span><span class="token function">Serve
                 
                 <div class="card-action article-tags">
                     
-                    <a href="/tags/ProtocolBuffers/">
-                        <span class="chip bg-color">ProtocolBuffers</span>
+                    <a href="/tags/go/">
+                        <span class="chip bg-color">go</span>
                     </a>
                     
-                    <a href="/tags/Varint/">
-                        <span class="chip bg-color">Varint</span>
-                    </a>
-                    
-                    <a href="/tags/ZigZag/">
-                        <span class="chip bg-color">ZigZag</span>
-                    </a>
-                    
-                    <a href="/tags/encode/">
-                        <span class="chip bg-color">encode</span>
+                    <a href="/tags/endless/">
+                        <span class="chip bg-color">endless</span>
                     </a>
                     
                 </div>
