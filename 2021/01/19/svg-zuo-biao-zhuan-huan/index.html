@@ -4,7 +4,7 @@
 
 <head>
     <meta charset="utf-8">
-    <meta name="keywords" content="2020年总结, MnCu&#39;s Blog">
+    <meta name="keywords" content="svg坐标转换, MnCu&#39;s Blog">
     <meta name="description" content="">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
@@ -16,7 +16,7 @@
     <!-- Global site tag (gtag.js) - Google Analytics -->
 
 
-    <title>2020年总结 | MnCu&#39;s Blog</title>
+    <title>svg坐标转换 | MnCu&#39;s Blog</title>
     <link rel="icon" type="image/png" href="/favicon.png">
 
     <link rel="stylesheet" type="text/css" href="/libs/awesome/css/all.css">
@@ -298,12 +298,12 @@
 
 
 
-<div class="bg-cover pd-header post-cover" style="background-image: url('/medias/featureimages/16.jpg')">
+<div class="bg-cover pd-header post-cover" style="background-image: url('/medias/featureimages/7.jpg')">
     <div class="container" style="right: 0px;left: 0px;">
         <div class="row">
             <div class="col s12 m12 l12">
                 <div class="brand">
-                    <h1 class="description center-align post-title">2020年总结</h1>
+                    <h1 class="description center-align post-title">svg坐标转换</h1>
                 </div>
             </div>
         </div>
@@ -419,12 +419,12 @@
                     
                     <div class="article-tag">
                         
-                            <a href="/tags/%E6%88%90%E9%95%BF/">
-                                <span class="chip bg-color">成长</span>
+                            <a href="/tags/svg/">
+                                <span class="chip bg-color">svg</span>
                             </a>
                         
-                            <a href="/tags/%E6%80%BB%E7%BB%93/">
-                                <span class="chip bg-color">总结</span>
+                            <a href="/tags/js/">
+                                <span class="chip bg-color">js</span>
                             </a>
                         
                     </div>
@@ -439,7 +439,7 @@
                 
                 <div class="post-date info-break-policy">
                     <i class="far fa-calendar-minus fa-fw"></i>发布日期:&nbsp;&nbsp;
-                    2021-01-13
+                    2021-01-19
                 </div>
                 
 
@@ -448,14 +448,14 @@
                 
                 <div class="info-break-policy">
                     <i class="far fa-file-word fa-fw"></i>文章字数:&nbsp;&nbsp;
-                    4.3k
+                    456
                 </div>
                 
 
                 
                 <div class="info-break-policy">
                     <i class="far fa-clock fa-fw"></i>阅读时长:&nbsp;&nbsp;
-                    14 分
+                    2 分
                 </div>
                 
 
@@ -473,100 +473,38 @@
 
         <div class="card-content article-card-content">
             <div id="articleContent">
-                <p>距离上一次总结<a href="https://blog.mncu.top/2019/05/07/jin-ji-nian-zong-jie/">近几年总结</a>已经过去近两年了。倒也不是我懒，只是因为中间的阶段性总结包含私密的事被记在我的小本本上了。</p>
-<p>博客很久也没有更新了，但实际自己还是在写，尽管写的没有那么频繁。主要写到有道云笔记了，另外最近几天搭建了一个博客，以后打算把内容都搬过去<a href="https://blog.mncu.top/">地址</a>，里面的很多东西都还不完善，后续会持续改进的。</p>
-<p>再就是这个也不仅仅是2020年总结，理论上应该是“上次总结之后的总结”</p>
-<h3 id="回顾"><a href="#回顾" class="headerlink" title="回顾"></a>回顾</h3><h4 id="第二份工作"><a href="#第二份工作" class="headerlink" title="第二份工作"></a>第二份工作</h4><h5 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h5><p>第二份工作从2018-10持续到2019-06，这份经历让我终身难忘。这不到两年的时间里：</p>
-<ul>
-<li>结识了一个十分不错的leader</li>
-<li>写了一个我3年工作生涯来最得意的项目</li>
-<li>邂逅了一个令我难忘的姑娘</li>
-<li>度过了一段痛苦愤怒的时光</li>
-<li>最后带着释怀又复杂的心离职</li>
+                <h3 id="本文内容转自"><a href="#本文内容转自" class="headerlink" title="本文内容转自"></a>本文内容转自</h3><ul>
+<li><a target="_blank" rel="noopener" href="https://www.sitepoint.com/how-to-translate-from-dom-to-svg-coordinates-and-back-again/">how-to-translate-from-dom-to-svg-coordinates-and-back-again</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.sarasoueidan.com/blog/svg-coordinate-systems/">svg coordinate system</a></li>
 </ul>
-<p>这里面部分细节我不会详细描述，主要是我很多都记在小本本上了，不太想让别人知道。。</p>
-<h5 id="平淡"><a href="#平淡" class="headerlink" title="平淡"></a>平淡</h5><p>初来这家公司的时候就经历了一个主要产品线的后端重构，为期3个月进行封闭开发，尽管项目比较赶但实际上没有什么技术上特别高大上的地方。主要难点在于：</p>
+<h3 id="Why-we-need-Coordinate-Translation"><a href="#Why-we-need-Coordinate-Translation" class="headerlink" title="Why we need Coordinate Translation"></a>Why we need Coordinate Translation</h3><p>This is the tricky part. Presume you click an SVG and want to create or position an SVG element at that point. The event handler object will give you the DOM .clientX and .clientY pixel coordinates but these must be translated to SVG units.</p>
+<p>It’s tempting to think you can calculate the x and y coordinates of an SVG point by applying a multiplication factor to the pixel location. For example, if a 1000 unit-width SVG is placed in a 500px width container, you can multiply any cursor x coordinate by two to get the SVG location. It rarely works!…</p>
 <ul>
-<li>后端几乎都是新招来的人，对项目不熟</li>
-<li>新同事之间需要磨合，且相对来说有部分不够靠谱的人</li>
-<li>部分业务较为复杂，但因为不够清楚中间会有什么坑，所以实现上并没有真正重构</li>
-<li>时间给的很少</li>
+<li>There is no guarantee the SVG will fit exactly into your container.</li>
+<li>If the page or element dimensions change – perhaps in response to the user resizing the browser – the x and y factors must be re-calculated.</li>
+<li>The SVG could be transformed in either 2D or 3D space.</li>
+<li>Even if you overcome these hurdles, it never quite works as you expect. There’s often a margin of error.</li>
 </ul>
-<p>因为以上的原因，我们重构并不是那么舒服，在中间因为我的参与贡献度非常高，还临时负责了一小段时间的项目进度管理，但那时候还是不够稳重，之前做事总是撸起袖子开干，也没有想过什么规划，导致自己做事逻辑性较差；另外，我对合作的不够靠谱的同事容忍度有些低，所以管理的我个人认为是一塌糊涂。。。</p>
-<p>但总之，尽管过程相对艰难，但最终结果还是较为满意的。</p>
-<p>后来公司战略方向转变，这个本来被寄予厚望的项目就暂时搁置，同时裁了一批人，也不知道我算幸运还是不幸，因为表现还算不错没有被裁掉。</p>
-<p>因为项目主要是维护，不再开发新的功能，所以我的工作变的清闲起来，也就是在这段时间写了“近几年总结”。也开始学习Go语言，本来以为我会在这里继续平平淡淡的度过两年然后离职找个Go语言的职位，没想到转折忽然到来。</p>
-<p>一天晚上我学习Go语言到很晚，公司的同事几乎走光了，我看到我的老大(下面简称他为T)还在工位上，想到最近都没怎么和老大交流，感觉现在是时候上去舔一波了。。</p>
-<p>于是过去问他最近在干啥啊，咋这么忙，他说在做曲谱解析相关的工作，然后他问我最近在干嘛，我坦诚的说了我基本啥事没有，可能T揣着小伙子这么优秀我不能让你闲着的心态问我有没有兴趣做曲谱相关的工作，我尽管没啥太大兴趣，但感觉自己一直闲下去不是办法，爽快答应。<strong>当时真的没想到这个项目会是我最得意的项目。所以我们某些看似不重要的选择对我们的影响可能真的超乎意料</strong></p>
-<h5 id="得意"><a href="#得意" class="headerlink" title="得意"></a>得意</h5><p>曲谱解析实际上就是将MusicXML转换为类Midi数据和SVG图片数据，并把类Midi和SVG关联起来。类Midi用来播放，而SVG则用来展示，将他们关联起来后当播放的同时就能在SVG上对应的音符上产生我们想要的效果，而我们在SVG上选择对应的音符划分乐句也能对应到类Midi上。</p>
-<p>曲谱解析只是负责解析数据，对应的渲染以及事件处理还需要一个曲谱引擎来做，T敲定，我负责曲谱解析，他来做曲谱引擎，同时还有其他人负责曲谱编辑器，以及app开发。而T也是整个项目的负责人。</p>
-<p>刚接触曲谱解析时完全不知从何处下手，幸而T已经自己实现了一部分，我开始快速学习乐理知识，天天找打谱人员看谱子，问她们问题，跟她们熟了以后还过去蹭吃蹭喝。。。</p>
-<p>曲谱解析开发过程中，各种坑逐渐显现：反复、嵌套反复、同音连线换行问题、Barline的省略问题、duration的无法整除问题、音符的重叠省略问题、倚音的时值处理问题、连音的时值问题…… 各种各样稀奇古怪的问题接踵而来，但幸而我具有极强的解决问题能力，极强的执行力(在不犯拖延症的情况下)，许许多多的夜晚边抽烟边写代码到凌晨2点，很多时候睡梦中也在思考解决方案，总之，绝大多数问题迎刃而解，最终整个公司的16000首曲谱解析成功率达到了接近100%。</p>
-<p>尽管曲谱解析不属于后端技术，但是我确实从中收获了许许多多的自信，这个东西可以说完完全全就是我自己独立开发出来的，所有问题网上并没有解决方案，完全靠自己解决。这种成就感无法用语言来表达，只是这个项目的经验在我后端面试的时候用处不大。。</p>
-<p>过程中我也暴露了很多问题，比如不会深入思考实现过程中可能的问题，不会深入思考整体的架构层次，导致初始的代码十分晦涩。后来我自己重构了一版，自我感觉及其不错。</p>
-<p>当曲谱解析开发的差不多的时候，我开始承接了更多的工作：</p>
+<h3 id="DOM-to-SVG-Coordinate-Translation"><a href="#DOM-to-SVG-Coordinate-Translation" class="headerlink" title="DOM to SVG Coordinate Translation"></a>DOM to SVG Coordinate Translation</h3><p>Fortunately, SVGs provide their own matrix factoring mechanisms to translate coordinates. The first step is to create a point on the SVG using the <code>createSVGPoint()</code> method and pass in our screen <code>x</code> and <code>y</code> coordinates:</p>
+<pre class="line-numbers language-js" data-language="js"><code class="language-js"><span class="token keyword">var</span> svg <span class="token operator">=</span> document<span class="token punctuation">.</span><span class="token function">getElementById</span><span class="token punctuation">(</span><span class="token string">'mysvg'</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+pt <span class="token operator">=</span> svg<span class="token punctuation">.</span><span class="token function">createSVGPoint</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+pt<span class="token punctuation">.</span>x <span class="token operator">=</span> <span class="token number">100</span><span class="token punctuation">;</span>
+pt<span class="token punctuation">.</span>y <span class="token operator">=</span> <span class="token number">200</span><span class="token punctuation">;</span>
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>We can then apply a matrix transformation. That matrix is created from an inverse of the SVG’s (under-documented!) <code>getScreenCTM()</code> method which maps SVG units to screen coordinates:</p>
+<pre class="line-numbers language-js" data-language="js"><code class="language-js"><span class="token keyword">var</span> svgP <span class="token operator">=</span> pt<span class="token punctuation">.</span><span class="token function">matrixTransform</span><span class="token punctuation">(</span>svg<span class="token punctuation">.</span><span class="token function">getScreenCTM</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">inverse</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span><span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<p>svgP now has <code>.x</code> and <code>.y</code> properties which provide the SVG coordinate location.</p>
+<h3 id="SVG-to-DOM-Coordinate-Translation"><a href="#SVG-to-DOM-Coordinate-Translation" class="headerlink" title="SVG to DOM Coordinate Translation"></a>SVG to DOM Coordinate Translation</h3><p><code>Element.getBoundingClientRect()</code> is supported in all browsers and returns an DOMrect object with the following properties in pixel dimensions:</p>
 <ul>
-<li>曲谱引擎有一部分我在做，</li>
-<li>同时曲谱编辑器我也会参与不少，</li>
-<li>另某些特殊的曲谱会解析错误导致我得不断修改曲谱解析代码，</li>
-<li>再就是之前刚来公司的第一个项目的维护工作也是我来做，</li>
+<li><code>.x</code> and <code>.left</code> – x-coordinate, relative to the viewport origin, of the left side of the element</li>
+<li><code>.right</code> – x-coordinate, relative to the viewport origin, of the right side of the element</li>
+<li><code>.y</code> and <code>.top</code> – y-coordinate, relative to the viewport origin, of the top side of the element</li>
+<li><code>.bottom</code> – y-coordinate, relative to the viewport origin, of the bottom side of the element</li>
+<li><code>.width</code> – width of the element (not supported in IE8 and below but is identical to .right minus .left)</li>
+<li><code>.height</code> – height of the element (not supported in IE8 and below but is identical to .bottom minus .top)</li>
 </ul>
-<p>最终导致我4条线同时作战，真的是焦头烂额。而T也是焦头烂额的状态，因为整个项目的开发完全达不到预期的开发速度，除了我以外其他人并没有特别的靠谱，而T也额外负责了很多工作，于是T只能把更多的工作交给我。。。</p>
-<h5 id="得意后的思考"><a href="#得意后的思考" class="headerlink" title="得意后的思考"></a>得意后的思考</h5><p>当时身心疲惫，我心态开始狂躁，愤怒，失衡。最终还是跟T发火了(尽管后来找他聊天他并没有在意)。当时我感到悔恨失落(因为我其实还是很喜欢T的，我们是双互之间的欣赏)我找了我第一家公司的老大(以下我们称他为W)谈心，W跟我说小伙子你发火确实不对，但T也有部分责任在里面，总之开导了我一翻，我随之解开心结。主动找T说明了情况，告诉他我现在在做的各种事，T分析了一番最终将第一个项目从我这里交给了其他人维护。<strong>我发现其实沟通很重要，很多情绪不要压抑在心底，一定要及时表达，这样早发现问题早解决</strong></p>
-<p>再就是项目其他人员之所以开发进度缓慢，我个人有一些理解：主要就是因为某些功能需要学习乐理知识后才能开发，而很多人似乎自己给自己设置了天花板，并不会主动去学习乐理知识，很多人仅仅停留在我只要开发页面就好了。可能他们也有自己的理由：比如学习这个有什么用，以后求职能用到嘛？我不想对这个做任何评价，我只想说，<strong>目前</strong>我认为，做一个靠谱的人需要：</p>
-<ul>
-<li>技术能力要可以，一般来说技术能力可以的人学习能力不会差</li>
-<li>脾气性格要可以，严肃、活泼</li>
-<li>执行力要可以</li>
-</ul>
-<p>这三者缺一不可，另外“可以”是指要处在平均线以上就好，并不要求太高，而目前看来靠谱的人在技术圈是十分受欢迎的。</p>
-<p>另外，在整个项目的推进过程中，有很多问题，最主要的问题在于：</p>
-<ul>
-<li>项目排期并不是由开发决定的，而是由业务人员决定</li>
-<li>产品经理，项目经理或者话语权较小或者与业务人员绑定到一起，严重失职</li>
-<li>开发人员话语权过小</li>
-</ul>
-<p>当然，这些问题可能主要原因在于公司的高层出现问题，而我职位较低，接触不到这些东西，无法作出有效评价。</p>
-<p>总之吧，可能是因为上面的原因再加上T有了孩子，T选择离职，并把大多数项目的维护工作交给我来做。</p>
-<h5 id="痛苦"><a href="#痛苦" class="headerlink" title="痛苦"></a>痛苦</h5><p>接下来就到了我的痛苦时期。</p>
-<p>T走了以后我的直属领导变为C，但是我所负责的业务的领导是X，所以导致给X干活然后C给我考评。。。不出意外的是我拿到了我进入公司以来的最低分，之前T在的时候我一直是小组最高的。。。</p>
-<p>另外我对C并不是特别认同，并不认为他是一个非常靠谱的人，所以自己也没有真正吧他当leader看待。但是应有的尊重还是有的，这点不知道我做的对还是错</p>
-<p>另外因为开发了曲谱解析，曲谱引擎，曲谱编辑器，T走了以后我是对这快儿最熟悉的人了，所以这块业务的后续开发继续由我来负责</p>
-<p>当我负责起以后我才发现之前的痛苦并没有什么。。</p>
-<ul>
-<li>所有的排期都是业务人员定</li>
-<li>每天的会议其实没有什么作用，纯粹浪费时间，我估计唯一的作用就是让产品能了解当前进度，但是扯皮占据绝大多数时间，往往开完会以后内心烦躁，严重影响效率</li>
-<li>当进度无法保证时，所有压力来到我这里，我只是觉得我承受了这个年龄段不该承受的压力。。</li>
-<li>再就是整个项目过程中急导致混乱，混乱导致更急，而我似乎感觉无力扭转这种困境</li>
-</ul>
-<p>但最终结果还算不错，因为所有的功能都按计划如期上线，而且似乎现在的整个业务营业额达到了1个亿，尽管我已经离职了，但我却是还是很开心，毕竟整个项目里面许许多多都是我的心血。</p>
-<p>总之吧，当整个项目稳定后，我的耐心也消耗殆尽，加上还有一些其他不想描述的事让我痛苦难受，所以我选择了离职。离职是我在项目开发过程中就想好的，我本来就打算开发完成后离职，尽量做一个靠谱的人，只是到了最后阶段可能部分事情做的并不靠谱。。。但我其实也并没有太多自责，毕竟我认为我的付出远远超出了这些。</p>
-<h5 id="释怀"><a href="#释怀" class="headerlink" title="释怀"></a>释怀</h5><p>现在我离职也有半年了，内心已经恢复过来。期间想起我最后离职的时候并没有写离职申请，所以在几个月的时间陆陆续续终于完成，在这里发一下，人名/项目名隐去：</p>
-<blockquote>
-<p>在过去的一年多时间里，公司给予了我良好的学习锻炼机会，尤记得初来公司时，参与了XM重构，开始了为期3个月的封闭开发，尽管过程相对艰难，但个人对最终结果较为满意，无论是技术架构上还是同同事交流沟通协作上都有了巨大的进步。只是最终XM与公司战略不符，项目作为维护状态，略有遗憾。后转到用户端组，因个人主要技术栈是服务端，对客户端不熟，内心较为彷徨，但幸而机缘巧合参与了ZN中的新曲谱的开发工作，尽管过程多曲折虐心，但最终收获喜人，由对乐曲一窍不通的状态到3个月后知道了许许多多的曲谱基本知识，其中对曲谱解析等功能的开发更令我记忆犹新，无论是算法方面亦或是解决问题方面有了显而易见的提升，几乎有一种个人可独当一面的错觉。这段经历是在本公司最为难忘的经历，让自己意识到自己在这之前的很多工作仅仅是增删改查，并无特殊不可替代之处，且之前所追逐的不同语言不同端的高低之分确实十分幼稚，成长匪浅，受益颇深，大开眼界！后来开始开发了ZN的上课功能，因个人对曲谱数据较熟，且新曲谱大多数功能开发个人所有涉猎，遂承接了部分相对较为重要部分，看起来委受重任，内心欢喜。</p>
-</blockquote>
-<blockquote>
-<p>只是这一年多来，一直工作压力颇大，生活中也未曾注意消解排遣，终至心态不稳，内心焦躁，自感压力颇大且辜负许多重任，且自初出校园时已快三年，个人感觉须进大厂开眼界长见识一番，遂经过长时间的考虑终于下定决心申请离职。</p>
-</blockquote>
-<blockquote>
-<p>一年多来在公司认识许多各有特点、印象深刻的同事，虽可能因个人脾气火爆桀骜不驯导致部分收获友谊，部分心有间隙，但与其相处日常确实难以忘怀。T心性率真，富有魄力，能力出众，有大将风范；J外表严肃沉默，内心丰富，做事专一认真，深耕技术，技能全面；H初识感觉严肃高傲，熟悉后又感觉可亲而富有童真，思维敏捷；Y不声不显，内敛低调，才艺惊人，可为我山东优秀代表青年；H吃苦耐劳，认真仔细，脾气好到我生平仅见；C任劳任怨，脾气温和，关爱晚辈，处事周全；</p>
-</blockquote>
-<blockquote>
-<p>另感谢B与我之前谈话中对我表现的认可，回顾三年工作经历个人一直在努力追求别人的认可，尽管程度已没有之前那么纯粹；另感谢您分享的个人经历以及对经济的看法，对我塑造个人观念/思维影响颇大，当时谈话结束时忘了说谢谢，现在补一下，感谢。</p>
-</blockquote>
-<blockquote>
-<p>X简单纯粹，乐观而固执，尽管与您共事确实令我不爽，但不得不承认，您是一个具有独特且鲜明性格的人，而我也一直希望自己能够成为与众不同/个性鲜明的人；当然，在我看来，假如我的性格能按照我希望的方向培养，我肯定要比您讨喜的多。之前和您的聊天让我释怀许多，感谢您的信任支持理解，愿您能最终证明您走的是正确的路。</p>
-</blockquote>
-<blockquote>
-<p>最后，关于交接：…(此处省略)</p>
-</blockquote>
-<blockquote>
-<p>愿诸位身体健康，愿公司蒸蒸日上。</p>
-</blockquote>
-<h3 id="现在"><a href="#现在" class="headerlink" title="现在"></a>现在</h3><h4 id="第三份工作"><a href="#第三份工作" class="headerlink" title="第三份工作"></a>第三份工作</h4><p>第三份工作是一家做AI的公司。</p>
-<p>写到这里其实不是特别想写了，因为感觉在这里时间还是太短，但我还是很喜欢这里的。整个项目排期非常正规，很多我之前可能用两天就能开发完成的这里会排期一周，所以我也有很多时间学习提升自己。另外周围同事很多名校毕业，优秀靠谱的人比例要大一些。</p>
-<p>目前在这里还没有作出什么成绩，但我并不着急，我觉得是金子总会发光。</p>
-<p>愿我能如我所想的那样发光！</p>
+<p>All coordinates are relative to the browser viewport and will therefore change as the page is scrolled. The absolute location on the page can be calculated by adding window.scrollX to <code>.left</code> and <code>window.scrollY</code> to <code>.top</code>.</p>
 
                 
             </div>
@@ -593,7 +531,7 @@
                     </i>
                 </span>
                 <span class="reprint-info">
-                    <a href="http://blog.mncu.top/2021/01/13/2020-nian-zong-jie/">http://blog.mncu.top/2021/01/13/2020-nian-zong-jie/</a>
+                    <a href="http://blog.mncu.top/2021/01/19/svg-zuo-biao-zhuan-huan/">http://blog.mncu.top/2021/01/19/svg-zuo-biao-zhuan-huan/</a>
                 </span>
             </div>
             <div class="reprint__notice">
@@ -631,12 +569,12 @@
                     
                         <div class="article-tag">
                             
-                                <a href="/tags/%E6%88%90%E9%95%BF/">
-                                    <span class="chip bg-color">成长</span>
+                                <a href="/tags/svg/">
+                                    <span class="chip bg-color">svg</span>
                                 </a>
                             
-                                <a href="/tags/%E6%80%BB%E7%BB%93/">
-                                    <span class="chip bg-color">总结</span>
+                                <a href="/tags/js/">
+                                    <span class="chip bg-color">js</span>
                                 </a>
                             
                         </div>
@@ -680,9 +618,10 @@
 <article id="prenext-posts" class="prev-next articles">
     <div class="row article-row">
         
-        <div class="article col s12 m6" data-aos="fade-up">
+        <div class="article col s12 m6" data-aos="fade-up" data-aos="fade-up">
             <div class="article-badge left-badge text-color">
-                <i class="fas fa-chevron-left"></i>&nbsp;上一篇</div>
+                <i class="far fa-dot-circle"></i>&nbsp;本篇
+            </div>
             <div class="card">
                 <a href="/2021/01/19/svg-zuo-biao-zhuan-huan/">
                     <div class="card-image">
@@ -700,9 +639,9 @@
                         
                     </div>
                     <div class="publish-info">
-                        <span class="publish-date">
-                            <i class="far fa-clock fa-fw icon-date"></i>2021-01-19
-                        </span>
+                            <span class="publish-date">
+                                <i class="far fa-clock fa-fw icon-date"></i>2021-01-19
+                            </span>
                         <span class="publish-author">
                             
                             <i class="fas fa-user fa-fw"></i>
@@ -711,6 +650,7 @@
                         </span>
                     </div>
                 </div>
+
                 
                 <div class="card-action article-tags">
                     
@@ -733,13 +673,13 @@
                 下一篇&nbsp;<i class="fas fa-chevron-right"></i>
             </div>
             <div class="card">
-                <a href="/2021/01/11/yi-go-you-ya-chong-qi/">
+                <a href="/2021/01/13/2020-nian-zong-jie/">
                     <div class="card-image">
                         
                         
-                        <img src="/medias/featureimages/23.jpg" class="responsive-img" alt="【译】Go优雅重启">
+                        <img src="/medias/featureimages/16.jpg" class="responsive-img" alt="2020年总结">
                         
-                        <span class="card-title">【译】Go优雅重启</span>
+                        <span class="card-title">2020年总结</span>
                     </div>
                 </a>
                 <div class="card-content article-content">
@@ -750,16 +690,12 @@
                     </div>
                     <div class="publish-info">
                             <span class="publish-date">
-                                <i class="far fa-clock fa-fw icon-date"></i>2021-01-11
+                                <i class="far fa-clock fa-fw icon-date"></i>2021-01-13
                             </span>
                         <span class="publish-author">
                             
-                            <i class="fas fa-bookmark fa-fw icon-category"></i>
-                            
-                            <a href="/categories/go/" class="post-category">
-                                    go
-                                </a>
-                            
+                            <i class="fas fa-user fa-fw"></i>
+                            MnCu
                             
                         </span>
                     </div>
@@ -767,12 +703,12 @@
                 
                 <div class="card-action article-tags">
                     
-                    <a href="/tags/go/">
-                        <span class="chip bg-color">go</span>
+                    <a href="/tags/%E6%88%90%E9%95%BF/">
+                        <span class="chip bg-color">成长</span>
                     </a>
                     
-                    <a href="/tags/endless/">
-                        <span class="chip bg-color">endless</span>
+                    <a href="/tags/%E6%80%BB%E7%BB%93/">
+                        <span class="chip bg-color">总结</span>
                     </a>
                     
                 </div>
